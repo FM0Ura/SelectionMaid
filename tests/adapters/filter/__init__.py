@@ -1,0 +1,1 @@
+"""Filter adapter tests."""

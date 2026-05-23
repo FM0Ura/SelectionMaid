@@ -1,0 +1,1 @@
+"""Enricher adapter tests."""
