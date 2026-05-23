@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from selection_maid.domain.models import DocumentChunk, DocumentMetadata
+
 
 class TestRawInput:
     """RawInput frozen dataclass tests."""
@@ -182,9 +184,7 @@ class TestDocumentMetadata:
 class TestExtractionResult:
     """ExtractionResult frozen dataclass tests."""
 
-    def _make_chunk(self, idx: int) -> object:
-        from selection_maid.domain.models import DocumentChunk
-
+    def _make_chunk(self, idx: int) -> DocumentChunk:
         return DocumentChunk(
             chunk_id=f"chunk-{idx:03d}",
             content=f"Chunk {idx} content.",
@@ -196,9 +196,7 @@ class TestExtractionResult:
             word_count=3,
         )
 
-    def _make_metadata(self) -> object:
-        from selection_maid.domain.models import DocumentMetadata
-
+    def _make_metadata(self) -> DocumentMetadata:
         return DocumentMetadata(
             title="Title",
             author="Author",
@@ -214,7 +212,7 @@ class TestExtractionResult:
 
         chunks = tuple(self._make_chunk(i) for i in range(3))
         meta = self._make_metadata()
-        result = ExtractionResult(metadata=meta, chunks=chunks)  # type: ignore[arg-type]
+        result = ExtractionResult(metadata=meta, chunks=chunks)
         assert isinstance(result.chunks, tuple)
         assert len(result.chunks) == 3
 
@@ -223,7 +221,7 @@ class TestExtractionResult:
 
         chunks = tuple(self._make_chunk(i) for i in range(2))
         meta = self._make_metadata()
-        result = ExtractionResult(metadata=meta, chunks=chunks)  # type: ignore[arg-type]
+        result = ExtractionResult(metadata=meta, chunks=chunks)
         with pytest.raises(dataclasses.FrozenInstanceError):
             result.metadata = meta  # type: ignore[misc]
 
@@ -233,7 +231,7 @@ class TestExtractionResult:
 
         chunks = tuple(self._make_chunk(i) for i in range(2))
         meta = self._make_metadata()
-        result = ExtractionResult(metadata=meta, chunks=chunks)  # type: ignore[arg-type]
+        result = ExtractionResult(metadata=meta, chunks=chunks)
         with pytest.raises(dataclasses.FrozenInstanceError):
             result.chunks = ()  # type: ignore[misc]
 
