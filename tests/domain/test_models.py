@@ -228,7 +228,7 @@ class TestExtractionResult:
             result.metadata = meta  # type: ignore[misc]
 
     def test_extraction_result_chunks_immutable(self) -> None:
-        """Tuple cannot be mutated — reassignment of result.chunks raises FrozenInstanceError."""
+        """Reassignment of result.chunks raises FrozenInstanceError."""
         from selection_maid.domain.models import ExtractionResult
 
         chunks = tuple(self._make_chunk(i) for i in range(2))
@@ -266,10 +266,13 @@ class TestNoThirdPartyImports:
             if hasattr(obj, "__module__") and isinstance(obj.__module__, str):
                 module_root = obj.__module__.split(".")[0]
                 # Skip internal names and known stdlib
-                if not name.startswith("_") and module_root not in stdlib_modules:
-                    # Also skip selection_maid itself (the module being tested)
-                    if module_root != "selection_maid":
-                        # Check if it's in stdlib
-                        assert module_root in sys.stdlib_module_names or module_root in stdlib_modules, (
-                            f"Non-stdlib import found: {name} from {obj.__module__}"
-                        )
+                if (
+                    not name.startswith("_")
+                    and module_root not in stdlib_modules
+                    and module_root != "selection_maid"
+                ):
+                    # Check if it's in stdlib
+                    assert (
+                        module_root in sys.stdlib_module_names
+                        or module_root in stdlib_modules
+                    ), f"Non-stdlib import found: {name} from {obj.__module__}"
