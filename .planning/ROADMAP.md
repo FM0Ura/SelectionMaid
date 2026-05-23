@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `ExtractionService` recebe todos os quatro ports via injeção de construtor e executa o pipeline extract → filter → chunk → enrich com stubs in-memory sem erros
   4. `ExtractionService` não contém nenhum import de biblioteca externa (sem `docling`, `fastapi`, `pydantic`) — mypy strict passa
   5. Suite de testes unitários exercita o pipeline completo com adaptadores stub e confirma que a saída de `ExtractionResult` tem o shape correto
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
 - [ ] 01-01: Criar estrutura de pacotes hexagonal e dataclasses de domínio frozen
