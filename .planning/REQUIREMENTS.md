@@ -30,8 +30,8 @@
 ### Metadata
 
 - [x] **META-01**: API retorna metadados do documento: título, autor, idioma detectado, tipo de documento, número de páginas, contagem de chunks, data de ingestão
-- [ ] **META-02**: Idioma do documento é detectado automaticamente e retornado em formato ISO 639-1 (ex: "pt", "en", "es")
-- [ ] **META-03**: Tipo de documento é inferido e categorizado em vocabulário fechado (article, report, presentation, form, legal, other)
+- [x] **META-02**: Idioma do documento é detectado automaticamente e retornado em formato ISO 639-1 (ex: "pt", "en", "es")
+- [x] **META-03**: Tipo de documento é inferido e categorizado em vocabulário fechado (article, report, presentation, form, legal, other)
 
 ### API
 
@@ -110,8 +110,8 @@
 | CHUNK-02 | Phase 4 | Pending |
 | CHUNK-03 | Phase 4 | Pending |
 | META-01 | Phase 5 | Complete |
-| META-02 | Phase 5 | Pending |
-| META-03 | Phase 5 | Pending |
+| META-02 | Phase 5 | Complete |
+| META-03 | Phase 5 | Complete |
 | API-01 | Phase 6 | Pending |
 | API-02 | Phase 6 | Pending |
 | API-03 | Phase 6 | Pending |

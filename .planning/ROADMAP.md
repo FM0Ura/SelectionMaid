@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Docling Extraction Adapter** - DoclingAdapter com singleton lifespan, timeout, CPU-only, testes com docs reais (completed 2026-05-24)
 - [x] **Phase 3: Content Filtering** - HeuristicFilter para headers/footers, números de página e whitespace excessivo (completed 2026-05-24)
 - [x] **Phase 4: Chunking** - MarkdownChunker com split por heading e fallback fixed-size com token budget (completed 2026-05-24)
-- [ ] **Phase 5: Metadata Enrichment** - MetadataEnricher com detecção de idioma, inferência de doc_type e campos completos
+- [x] **Phase 5: Metadata Enrichment** - MetadataEnricher com detecção de idioma, inferência de doc_type e campos completos (completed 2026-05-24)
 - [ ] **Phase 6: HTTP API Layer** - Router FastAPI como adaptador de entrada, validação de arquivo, run_in_threadpool
 - [ ] **Phase 7: Integration Hardening** - Fixtures reais multi-formato, regressão de memória, teste de concorrência
 
@@ -170,7 +170,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 05-03-PLAN.md — Verification with multilingual documents and edge case handling
+- [x] 05-03-PLAN.md — Verification with multilingual documents and edge case handling
 
 ### Phase 6: HTTP API Layer
 
@@ -228,6 +228,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Docling Extraction Adapter | 5/5 | Complete   | 2026-05-24 |
 | 3. Content Filtering | 3/3 | Complete | 2026-05-24 |
 | 4. Chunking | 3/3 | Complete | 2026-05-24 |
-| 5. Metadata Enrichment | 2/3 | In Progress|  |
+| 5. Metadata Enrichment | 3/3 | Complete   | 2026-05-24 |
 | 6. HTTP API Layer | 0/4 | Not started | - |
 | 7. Integration Hardening | 0/4 | Not started | - |
