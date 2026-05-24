@@ -17,6 +17,26 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
+def _as_int(value: object, default: int) -> int:
+    """Safely cast a TOML value to int, falling back to default.
+
+    TOML integers are represented as Python ``int`` objects by tomllib.
+    This helper avoids the mypy strict ``call-overload`` error that arises
+    from passing ``object`` (the return type of ``dict[str, object].get()``)
+    directly to ``int()``.
+
+    Args:
+        value: Raw value from the TOML dict (type is ``object``).
+        default: Fallback value when ``value`` is not a valid ``int``.
+
+    Returns:
+        ``int(value)`` if ``value`` is an instance of ``int``, else ``default``.
+    """
+    if isinstance(value, int):
+        return value
+    return default
+
+
 @dataclass
 class FilterConfig:
     """Configuration for the HeuristicFilter adapter (D-39, D-40).
@@ -92,8 +112,8 @@ def get_config(config_path: Path | None = None) -> GlobalConfig:
         filter_raw = raw["filter"]  # type: ignore[assignment]
 
     filter_cfg = FilterConfig(
-        min_repeat=int(filter_raw.get("min_repeat", FilterConfig.min_repeat)),  # type: ignore[arg-type]
-        max_line_len=int(filter_raw.get("max_line_len", FilterConfig.max_line_len)),  # type: ignore[arg-type]
+        min_repeat=_as_int(filter_raw.get("min_repeat"), FilterConfig.min_repeat),
+        max_line_len=_as_int(filter_raw.get("max_line_len"), FilterConfig.max_line_len),
     )
 
     chunker_raw: dict[str, object] = {}
@@ -101,7 +121,7 @@ def get_config(config_path: Path | None = None) -> GlobalConfig:
         chunker_raw = raw["chunker"]  # type: ignore[assignment]
 
     chunker_cfg = ChunkerConfig(
-        max_tokens=int(chunker_raw.get("max_tokens", ChunkerConfig.max_tokens)),  # type: ignore[arg-type]
+        max_tokens=_as_int(chunker_raw.get("max_tokens"), ChunkerConfig.max_tokens),
     )
 
     return GlobalConfig(filter=filter_cfg, chunker=chunker_cfg)
