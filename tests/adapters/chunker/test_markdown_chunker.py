@@ -5,6 +5,8 @@ Test structure:
     basic metadata fields (Task 1, D-45, D-46, D-53, D-54, D-55, D-56).
   - TestLargeSectionSubdivision: paragraph-boundary subdivision for oversized
     sections (Task 2, D-47, D-48).
+  - TestFixedSizeFallback: fixed-size token-budget chunking for documents
+    without H1/H2 headings (Plan 04-03 Task 1, D-49, D-50, D-51, D-52, D-56).
 
 All fixtures are inline Markdown strings — no external .md files.
 """
@@ -311,3 +313,143 @@ class TestLargeSectionSubdivision:
         for i, chunk in enumerate(chunks):
             assert chunk.chunk_index == i
             assert chunk.total_chunks == total
+
+
+class TestFixedSizeFallback:
+    """Fixed-size token-budget chunking for documents without H1/H2 headings.
+
+    Covers (Plan 04-03 Task 1):
+      - Fallback activates when no H1/H2 heading is present (D-49)
+      - tiktoken cl100k_base is used for token counting (D-50)
+      - max_tokens (default 512) limits chunk size (D-51)
+      - Paragraph boundaries (double newline) are respected — never mid-paragraph (D-52)
+      - section_title is "" for all fallback chunks (D-56)
+      - chunk_index and total_chunks are consistent across fallback chunks
+    """
+
+    def _make_paragraph(self, word_count: int, seed: str = "word") -> str:
+        """Build a paragraph with the given number of space-separated words."""
+        return " ".join(f"{seed}{i}" for i in range(word_count))
+
+    def test_fallback_activates_when_no_headings(self) -> None:
+        """Fixed-size fallback is used when the document has no H1/H2 (D-49)."""
+        content = "This is plain prose without any heading.\n\nAnother paragraph here."
+        chunker = MarkdownChunker()
+        chunks = chunker.chunk(content)
+        # The document has no headings — fallback must have produced chunks
+        assert len(chunks) >= 1
+        # All chunks from the fallback have section_title="" (D-56)
+        for chunk in chunks:
+            assert chunk.section_title == ""
+
+    def test_fallback_not_activated_when_headings_present(self) -> None:
+        """Fallback is NOT used when the document contains an H1 or H2 (D-49)."""
+        content = "# A Heading\n\nContent under heading."
+        chunker = MarkdownChunker()
+        chunks = chunker.chunk(content)
+        # Heading-based split used; section_title is set to heading text
+        assert chunks[0].section_title == "A Heading"
+
+    def test_fallback_section_title_is_empty_string(self) -> None:
+        """All chunks produced by the fallback strategy have section_title='' (D-56)."""
+        # Three separate paragraphs; each small enough to fit in one chunk
+        content = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph."
+        chunker = MarkdownChunker(max_tokens=512)
+        chunks = chunker.chunk(content)
+        for chunk in chunks:
+            assert chunk.section_title == ""
+
+    def test_fallback_respects_max_tokens(self) -> None:
+        """Fallback splits into multiple chunks when token budget is exceeded (D-51)."""
+        # Two large paragraphs that together exceed max_tokens=50
+        p1 = self._make_paragraph(40, "alpha")
+        p2 = self._make_paragraph(40, "beta")
+        content = f"{p1}\n\n{p2}"
+        # max_tokens=50: each paragraph alone fits but together they do not
+        chunker = MarkdownChunker(max_tokens=50)
+        chunks = chunker.chunk(content)
+        assert len(chunks) == 2
+        assert "alpha0" in chunks[0].content
+        assert "beta0" in chunks[1].content
+
+    def test_fallback_respects_paragraph_boundaries(self) -> None:
+        """Fallback never cuts inside a paragraph — only at double-newline boundaries (D-52)."""
+        p1 = self._make_paragraph(30, "a")
+        p2 = self._make_paragraph(30, "b")
+        p3 = self._make_paragraph(30, "c")
+        content = f"{p1}\n\n{p2}\n\n{p3}"
+        # max_tokens=40: each paragraph (~30 tokens) fits; two paragraphs (60 tokens) don't
+        chunker = MarkdownChunker(max_tokens=40)
+        chunks = chunker.chunk(content)
+        # Each chunk must contain complete paragraphs
+        for chunk in chunks:
+            for prefix in ("a", "b", "c"):
+                first_word = f"{prefix}0"
+                last_word = f"{prefix}29"
+                has_first = first_word in chunk.content
+                has_last = last_word in chunk.content
+                assert has_first == has_last, (
+                    f"Paragraph '{prefix}' appears split across chunks: "
+                    f"first={has_first}, last={has_last} in chunk {chunk.chunk_index}"
+                )
+
+    def test_fallback_single_paragraph_produces_one_chunk(self) -> None:
+        """A document with a single paragraph and no headings returns exactly one chunk."""
+        content = "Just one paragraph of plain text without any heading markers."
+        chunker = MarkdownChunker()
+        chunks = chunker.chunk(content)
+        assert len(chunks) == 1
+        assert chunks[0].section_title == ""
+
+    def test_fallback_chunk_index_and_total_chunks_consistent(self) -> None:
+        """chunk_index and total_chunks are consistent across all fallback chunks."""
+        p1 = self._make_paragraph(60, "x")
+        p2 = self._make_paragraph(60, "y")
+        p3 = self._make_paragraph(60, "z")
+        content = f"{p1}\n\n{p2}\n\n{p3}"
+        chunker = MarkdownChunker(max_tokens=80)
+        chunks = chunker.chunk(content)
+        total = len(chunks)
+        assert total > 0
+        for i, chunk in enumerate(chunks):
+            assert chunk.chunk_index == i
+            assert chunk.total_chunks == total
+
+    def test_fallback_chunk_ids_are_unique_uuids(self) -> None:
+        """Each fallback chunk has a unique UUID v4 chunk_id (D-54)."""
+        p1 = self._make_paragraph(60, "u")
+        p2 = self._make_paragraph(60, "v")
+        content = f"{p1}\n\n{p2}"
+        chunker = MarkdownChunker(max_tokens=80)
+        chunks = chunker.chunk(content)
+        ids = [c.chunk_id for c in chunks]
+        assert len(ids) == len(set(ids)), "chunk_ids must be unique"
+        for chunk_id in ids:
+            parsed = __import__("uuid").UUID(chunk_id)
+            assert parsed.version == 4
+
+    def test_fallback_page_start_and_page_end_are_zero(self) -> None:
+        """page_start and page_end are always 0 in the fallback path (D-53)."""
+        content = "Paragraph one.\n\nParagraph two."
+        chunker = MarkdownChunker()
+        chunks = chunker.chunk(content)
+        for chunk in chunks:
+            assert chunk.page_start == 0
+            assert chunk.page_end == 0
+
+    def test_fallback_word_count_correct(self) -> None:
+        """word_count equals len(content.split()) for each fallback chunk (D-55)."""
+        content = "One two three.\n\nFour five six."
+        chunker = MarkdownChunker()
+        chunks = chunker.chunk(content)
+        for chunk in chunks:
+            assert chunk.word_count == len(chunk.content.split())
+
+    def test_h3_only_document_uses_fallback(self) -> None:
+        """A document with only H3 headings (no H1/H2) uses the fixed-size fallback (D-49)."""
+        content = "### Sub-section\n\nSome content under an H3 heading."
+        chunker = MarkdownChunker()
+        chunks = chunker.chunk(content)
+        # H3 is not a split trigger; fallback used — section_title=""
+        assert len(chunks) == 1
+        assert chunks[0].section_title == ""
