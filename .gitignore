@@ -1,0 +1,32 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Mypy cache
+.mypy_cache/
+
+# Pytest cache
+.pytest_cache/
+
+# Ruff cache
+.ruff_cache/
+
+# OS files
+.DS_Store
+
+# Integration test fixtures — downloaded on-demand, not committed (D-26)
+tests/fixtures/
+tests/fixtures/*.pdf
+tests/fixtures/*.docx
+tests/fixtures/*.html

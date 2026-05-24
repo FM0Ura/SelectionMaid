@@ -51,4 +51,6 @@ class MetadataEnricherPort(Protocol):
     ``raw``, total_chunks from ``chunks``).
     """
 
-    def enrich(self, raw: RawDocument, chunks: list[DocumentChunk]) -> DocumentMetadata: ...
+    def enrich(
+        self, raw: RawDocument, chunks: list[DocumentChunk]
+    ) -> DocumentMetadata: ...
