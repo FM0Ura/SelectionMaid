@@ -45,11 +45,13 @@ class StubChunker:
 class StubEnricher:
     def enrich(self, raw: RawDocument, chunks: list[DocumentChunk]) -> DocumentMetadata:
         return DocumentMetadata(
+            doc_id="stub-id",
+            source_filename="test.pdf",
             title="Test Doc",
             author="Author",
             language="en",
-            document_type="article",
+            doc_type="article",
             page_count=raw.page_count,
             chunk_count=len(chunks),
-            ingestion_date=datetime.now(),
+            ingested_at=datetime.now(),
         )

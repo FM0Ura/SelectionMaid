@@ -7,7 +7,7 @@ Defined in dependency order (no forward references needed):
   1. RawInput       — entry object for ExtractorPort.extract()
   2. RawDocument    — Markdown blob returned by extractor / filter
   3. DocumentChunk  — single chunk with all CHUNK-03 required fields
-  4. DocumentMetadata — enriched metadata with all META-01 required fields
+  4. DocumentMetadata — enriched metadata with all META-01 required fields (9 fields)
   5. ExtractionResult — final pipeline output
 """
 from __future__ import annotations
@@ -67,18 +67,20 @@ class DocumentChunk:
 class DocumentMetadata:
     """Enriched document-level metadata.
 
-    Fields per META-01 requirement (exactly 7):
-      title, author, language (ISO 639-1), document_type,
-      page_count, chunk_count, ingestion_date.
+    Fields per META-01 requirement (exactly 9):
+      doc_id, source_filename, title, author, language (ISO 639-1),
+      doc_type, page_count, chunk_count, ingested_at.
     """
 
+    doc_id: str
+    source_filename: str
     title: str
     author: str
     language: str
-    document_type: str
+    doc_type: str
     page_count: int
     chunk_count: int
-    ingestion_date: datetime
+    ingested_at: datetime
 
 
 @dataclass(frozen=True)
