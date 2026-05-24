@@ -14,6 +14,7 @@ Plans that populate these classes:
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -21,7 +22,11 @@ import pytest
 
 from selection_maid.adapters.extractor.docling import DoclingAdapter
 from selection_maid.domain.models import RawDocument, RawInput
-from selection_maid.errors import ExtractionError, UnsupportedFormatError
+from selection_maid.errors import (
+    ExtractionError,
+    ExtractionTimeoutError,
+    UnsupportedFormatError,
+)
 
 
 class TestDoclingAdapterUnit:
@@ -73,6 +78,45 @@ class TestDoclingAdapterUnit:
         assert result.content == "# Hello"
         assert result.format == "pdf"
         assert result.page_count == 1
+
+    def test_timeout_raises_extraction_timeout_error(self) -> None:
+        """ExtractionTimeoutError raised when converter.convert() exceeds timeout.
+
+        Strategy (D-25): use timeout_seconds=1 and a convert() that sleeps 2s
+        so the ThreadPoolExecutor future.result(timeout=1) fires TimeoutError,
+        which DoclingAdapter translates to ExtractionTimeoutError.
+        Wall time is ~2s (1s timeout + ~1s executor shutdown(wait=True)).
+        """
+        mock_converter = Mock()
+        mock_converter.convert.side_effect = lambda path: time.sleep(2)
+
+        adapter = DoclingAdapter(converter=mock_converter, timeout_seconds=1)
+        raw_input = RawInput(
+            path=Path("/tmp/test.pdf"),
+            filename="test.pdf",
+            mime_type="application/pdf",
+        )
+        with pytest.raises(ExtractionTimeoutError):
+            adapter.extract(raw_input)
+
+    def test_domain_error_propagates_unchanged(self) -> None:
+        """ExtractionError raised inside convert() passes through unwrapped.
+
+        The SelectionMaidError branch in extract() re-raises unchanged. Asserting
+        the message value confirms no double-wrapping occurred.
+        """
+        mock_converter = Mock()
+        mock_converter.convert.side_effect = ExtractionError("already a domain error")
+
+        adapter = DoclingAdapter(converter=mock_converter, timeout_seconds=5)
+        raw_input = RawInput(
+            path=Path("/tmp/test.pdf"),
+            filename="test.pdf",
+            mime_type="application/pdf",
+        )
+        with pytest.raises(ExtractionError) as exc_info:
+            adapter.extract(raw_input)
+        assert exc_info.value.message == "already a domain error"
 
 
 class TestDoclingAdapterIntegration:
