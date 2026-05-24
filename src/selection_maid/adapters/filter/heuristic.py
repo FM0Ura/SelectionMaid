@@ -226,8 +226,8 @@ class HeuristicFilter:
 
 
 def build_heuristic_filter(
-    min_repeat: int = 3,
-    max_line_len: int = 80,
+    min_repeat: int | None = None,
+    max_line_len: int | None = None,
 ) -> HeuristicFilter:
     """Factory function for HeuristicFilter (D-23/D-39).
 
@@ -235,11 +235,25 @@ def build_heuristic_filter(
     (Phase 3 config integration, tests) use this factory rather than
     constructing HeuristicFilter directly.
 
+    If ``min_repeat`` or ``max_line_len`` are ``None``, the factory reads the
+    centralized config via :func:`selection_maid.config.get_config` and uses
+    the resolved values (which themselves fall back to hardcoded defaults when
+    no ``config.toml`` is present — D-38/D-39).
+
     Args:
-        min_repeat: Minimum repetitions for header/footer removal. Defaults to 3.
-        max_line_len: Maximum line length for header/footer candidates. Defaults to 80.
+        min_repeat: Minimum repetitions for header/footer removal.
+            ``None`` (default) resolves to ``config.filter.min_repeat`` (3).
+        max_line_len: Maximum line length for header/footer candidates.
+            ``None`` (default) resolves to ``config.filter.max_line_len`` (80).
 
     Returns:
         A fully configured HeuristicFilter instance.
     """
-    return HeuristicFilter(min_repeat=min_repeat, max_line_len=max_line_len)
+    from selection_maid.config import get_config  # avoid circular import at module load
+
+    cfg = get_config()
+    resolved_min_repeat = min_repeat if min_repeat is not None else cfg.filter.min_repeat
+    resolved_max_line_len = (
+        max_line_len if max_line_len is not None else cfg.filter.max_line_len
+    )
+    return HeuristicFilter(min_repeat=resolved_min_repeat, max_line_len=resolved_max_line_len)
