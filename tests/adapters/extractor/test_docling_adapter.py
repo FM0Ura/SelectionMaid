@@ -187,3 +187,118 @@ class TestDoclingAdapterIntegration:
         assert result.content  # non-empty Markdown
         assert result.format == "html"
         assert result.page_count == 0  # D-29: HTML has no page concept
+
+    def test_headings_in_pdf(
+        self, real_converter: object, real_pdf_path: Path | None
+    ) -> None:
+        """PDF fixture output contains at least one heading marker (EXT-04).
+
+        D-28: heading content extracted via export_to_markdown().
+        # Known limitation: Docling issue #1023 — all headings exported as H2;
+        # checking heading presence only, not level. The assertion "# " matches
+        # any heading level (##, ### also contain the substring "# ").
+        """
+        if real_pdf_path is None:
+            pytest.skip("Integration fixtures unavailable — skipping")
+
+        adapter = DoclingAdapter(converter=real_converter)
+        raw_input = RawInput(
+            path=real_pdf_path,
+            filename="sample.pdf",
+            mime_type="application/pdf",
+        )
+        result = adapter.extract(raw_input)
+
+        # Known limitation: Docling issue #1023 — all headings exported as H2;
+        # checking heading presence only, not level.
+        assert "# " in result.content, (
+            "Expected at least one heading marker '# ' in PDF Markdown output"
+        )
+
+    def test_tables_in_docx(
+        self, real_converter: object, real_docx_path: Path | None
+    ) -> None:
+        """DOCX fixture output contains GFM table syntax (EXT-05).
+
+        The sample.docx fixture is expected to contain at least one table.
+        GFM table markers: pipe separator '|' for columns, '---' for separator row.
+        """
+        if real_docx_path is None:
+            pytest.skip("Integration fixtures unavailable — skipping")
+
+        adapter = DoclingAdapter(converter=real_converter)
+        raw_input = RawInput(
+            path=real_docx_path,
+            filename="sample.docx",
+            mime_type=(
+                "application/vnd.openxmlformats-officedocument"
+                ".wordprocessingml.document"
+            ),
+        )
+        result = adapter.extract(raw_input)
+
+        assert "|" in result.content, (
+            "Expected GFM table pipe separator '|' in DOCX Markdown output"
+        )
+        assert "---" in result.content, (
+            "Expected GFM table separator '---' in DOCX Markdown output"
+        )
+
+    def test_lists_in_html(
+        self, real_converter: object, real_html_path: Path | None
+    ) -> None:
+        """HTML fixture output contains at least one list marker (EXT-06).
+
+        Accepts unordered list markers ('- ', '* ') or ordered list marker ('1. ').
+        """
+        if real_html_path is None:
+            pytest.skip("Integration fixtures unavailable — skipping")
+
+        adapter = DoclingAdapter(converter=real_converter)
+        raw_input = RawInput(
+            path=real_html_path,
+            filename="sample.html",
+            mime_type="text/html",
+        )
+        result = adapter.extract(raw_input)
+
+        assert any(marker in result.content for marker in ["- ", "* ", "1. "]), (
+            "Expected at least one list marker ('- ', '* ', or '1. ') in HTML"
+            " Markdown output"
+        )
+
+    def test_code_blocks(
+        self, real_converter: object, tmp_path: Path
+    ) -> None:
+        """Inline HTML with <pre><code> block produces triple-backtick fences (EXT-07).
+
+        # EXT-07: Docling CodeItem serialized by MarkdownSerializer as
+        # triple-backtick fenced block (format_code_blocks=True by default).
+        # Using an inline HTML fixture with <pre><code> block — guaranteed to
+        # contain code markup without network access.
+        # The assertion is unconditional: the fixture always has code content,
+        # so a vacuous pass is not possible.
+        """
+        # EXT-07: Verify Docling MarkdownSerializer wraps CodeItem in triple-backtick
+        # fenced blocks. Using an inline HTML fixture with <pre><code> block —
+        # guaranteed to contain code markup without network access.
+        html_content = (
+            "<html><body><pre><code>some_code()</code></pre></body></html>"
+        )
+        code_sample = tmp_path / "code_sample.html"
+        code_sample.write_text(html_content, encoding="utf-8")
+
+        adapter = DoclingAdapter(converter=real_converter)
+        raw_input = RawInput(
+            path=code_sample,
+            filename="code_sample.html",
+            mime_type="text/html",
+        )
+        result = adapter.extract(raw_input)
+
+        # EXT-07: Docling CodeItem serialized by MarkdownSerializer as
+        # triple-backtick fenced block (format_code_blocks=True by default).
+        assert "```" in result.content, (
+            "Expected triple-backtick fenced code block '```' in HTML Markdown"
+            " output from <pre><code> source"
+        )
