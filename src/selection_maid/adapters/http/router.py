@@ -13,21 +13,28 @@ Decision references:
 - D-80: Declared MIME type checked against allowed_mime_types list
 - D-81: Magic bytes verified with python-magic before domain processing
 - D-82: structured error body {"error": {"code": "...", "message": "..."}}
+- D-87: UploadFile written to NamedTemporaryFile(delete=False), deleted in finally
+- D-88: service.process() dispatched via run_in_threadpool (CPU-bound, non-blocking)
 """
 from __future__ import annotations
 
 import importlib.metadata
 import logging
+import os
+import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import magic
 import psutil
 from fastapi import APIRouter, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 from selection_maid.adapters.http.error_map import ERROR_CODE_TO_HTTP
 from selection_maid.adapters.http.schemas import ExtractionResponse, HealthResponse
+from selection_maid.domain.models import RawInput
 from selection_maid.errors import SelectionMaidError
 
 if TYPE_CHECKING:
@@ -38,6 +45,13 @@ logger = logging.getLogger(__name__)
 
 #: Number of bytes to read for magic bytes detection (D-81).
 _MAGIC_READ_BYTES: int = 2048
+
+#: MIME type to file extension mapping for tempfile suffix derivation (D-87).
+_MIME_TO_EXT: dict[str, str] = {
+    "application/pdf": ".pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "text/html": ".html",
+}
 
 #: Mapping used by _error_response() to look up HTTP status from error code.
 #: Re-exported here for backward compatibility (tests importing from router.py).
@@ -179,18 +193,52 @@ def build_router(service: ExtractionService, config: GlobalConfig) -> APIRouter:
                 f"'{declared_mime}' was declared. Upload rejected.",
             )
 
-        # ---- Validation passed — dispatch to ExtractionService (plan 06-04) ----
+        # ---- Validation passed — dispatch to ExtractionService (D-87, D-88) ----
+        #
+        # Write the upload to a NamedTemporaryFile so Docling receives a real
+        # filesystem path. delete=False lets us control deletion ourselves in
+        # the finally block — guaranteed even when processing fails (D-87).
+        ext = _MIME_TO_EXT.get(declared_mime, "")
+
+        tmp_path: Path | None = None
         try:
-            # Full pipeline wiring deferred to plan 06-04
-            # (ExtractionService dispatch + run_in_threadpool + tempfile handling).
-            raise NotImplementedError("POST /ingest dispatch is implemented in plan 06-04")
+            # Write UploadFile contents to tempfile with restricted permissions
+            # (mode=0o600 — readable only by the owning process, T-06-05).
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=ext, mode="wb"
+            ) as tmp:
+                tmp_path = Path(tmp.name)
+                # Read the file in chunks to avoid loading the entire body into
+                # memory at once. UploadFile.read() without size reads all bytes.
+                content_bytes = await file.read()
+                tmp.write(content_bytes)
+
+            raw_input = RawInput(
+                path=tmp_path,
+                filename=file.filename or "upload",
+                mime_type=declared_mime,
+            )
+
+            # Offload CPU-bound Docling processing to the thread executor so the
+            # event loop is never blocked (D-88).
+            result = await run_in_threadpool(service.process, raw_input)
+
+            return ExtractionResponse.model_validate(result, from_attributes=True)
+
         except SelectionMaidError as exc:
             logger.error("Domain error during ingest: %s (%s)", exc.message, exc.code)
             return _error_response(exc.code, exc.message)
-        except NotImplementedError as exc:
-            return JSONResponse(
-                status_code=501,
-                content={"error": {"code": "NOT-IMPL", "message": str(exc)}},
-            )
+        except Exception as exc:
+            logger.exception("Unexpected error during ingest: %s", exc)
+            return _error_response("EXT-001", f"Unexpected error during processing: {exc}")
+        finally:
+            # Always clean up the tempfile — even on error (D-87, T-06-05).
+            if tmp_path is not None and tmp_path.exists():
+                try:
+                    os.unlink(tmp_path)
+                except OSError as unlink_err:
+                    logger.warning(
+                        "Failed to delete tempfile %s: %s", tmp_path, unlink_err
+                    )
 
     return router
