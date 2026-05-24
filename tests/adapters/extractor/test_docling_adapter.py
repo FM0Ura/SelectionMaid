@@ -21,12 +21,14 @@ from unittest.mock import Mock
 import pytest
 
 from selection_maid.adapters.extractor.docling import DoclingAdapter
-from selection_maid.domain.models import RawDocument, RawInput
+from selection_maid.domain.models import ExtractionResult, RawDocument, RawInput
 from selection_maid.errors import (
     ExtractionError,
     ExtractionTimeoutError,
     UnsupportedFormatError,
 )
+from selection_maid.service import ExtractionService
+from tests.stubs.adapters import StubChunker, StubEnricher, StubFilter
 
 
 class TestDoclingAdapterUnit:
@@ -302,3 +304,43 @@ class TestDoclingAdapterIntegration:
             "Expected triple-backtick fenced code block '```' in HTML Markdown"
             " output from <pre><code> source"
         )
+
+    def test_service_with_docling_adapter(
+        self, real_converter: object, real_pdf_path: Path | None
+    ) -> None:
+        """ExtractionService.process() works end-to-end with DoclingAdapter (D-21).
+
+        DoclingAdapter is the real extractor; FilterPort, ChunkerPort, and
+        MetadataEnricherPort are satisfied by stub adapters. Validates that
+        DoclingAdapter plugs correctly into the hexagonal pipeline and that
+        ExtractionResult is produced with non-None metadata and at least one chunk.
+        """
+        if real_pdf_path is None:
+            pytest.skip("Integration fixtures unavailable — skipping")
+
+        adapter = DoclingAdapter(converter=real_converter)
+        service = ExtractionService(
+            adapter, StubFilter(), StubChunker(), StubEnricher()
+        )
+        raw_input = RawInput(
+            path=real_pdf_path,
+            filename="sample.pdf",
+            mime_type="application/pdf",
+        )
+        result = service.process(raw_input)
+
+        assert isinstance(result, ExtractionResult)
+        assert result.metadata is not None
+        assert len(result.chunks) >= 1
+
+    def test_converter_singleton_behavior(self, real_converter: object) -> None:
+        """real_converter fixture yields the same DocumentConverter instance (D-26).
+
+        pytest session-scoped fixtures are cached — any test requesting
+        real_converter in the same session receives the same object. Two
+        DoclingAdapter instances constructed with real_converter must share
+        the exact same _converter reference (verified via identity check).
+        """
+        adapter1 = DoclingAdapter(converter=real_converter)
+        adapter2 = DoclingAdapter(converter=real_converter)
+        assert adapter1._converter is adapter2._converter
