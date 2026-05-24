@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "docling>=2.95.0",
+    "tiktoken>=0.13.0",
 ]
 
 [build-system]
