@@ -29,7 +29,7 @@ import pytest
 FIXTURES_DIR = Path(__file__).parent.parent.parent / "fixtures"
 
 FIXTURE_URLS: dict[str, str] = {
-    "sample.pdf": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/pdf-sample.pdf",
+    "sample.pdf": "https://www.orimi.com/pdf-test.pdf",
     "sample.docx": "https://calibre-ebook.com/downloads/demos/demo.docx",
     "sample.html": "https://www.w3.org/TR/WCAG20/",
 }
