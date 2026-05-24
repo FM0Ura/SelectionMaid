@@ -35,6 +35,9 @@ Decision references:
 
 from __future__ import annotations
 
+import re
+import uuid
+
 import tiktoken
 
 from selection_maid.config import ChunkerConfig
@@ -43,6 +46,93 @@ from selection_maid.errors import ChunkingError, SelectionMaidError
 
 #: Tokenizer encoding hardcoded to cl100k_base (D-50) — not configurable in v1.
 _ENCODING_NAME: str = "cl100k_base"
+
+#: Regex matching H1 and H2 headings only (D-45).
+#: Group 1 captures the heading text without leading '#' characters.
+_H1_H2_PATTERN: re.Pattern[str] = re.compile(r"^#{1,2}\s+(.+)", re.MULTILINE)
+
+
+def _make_chunk(
+    content: str,
+    section_title: str,
+    chunk_index: int,
+    total_chunks: int,
+    chunk_id: str,
+) -> DocumentChunk:
+    """Create a DocumentChunk with all CHUNK-03 fields populated.
+
+    Args:
+        content: The text content for this chunk.
+        section_title: Heading title without '#' prefix (D-56). Empty string
+            for pre-heading content and fixed-size fallback chunks.
+        chunk_index: Zero-based position of this chunk in the final list.
+        total_chunks: Total number of chunks produced by this call.
+        chunk_id: Pre-generated UUID v4 string for this chunk (D-54).
+
+    Returns:
+        Immutable DocumentChunk with all required fields.
+    """
+    return DocumentChunk(
+        chunk_id=chunk_id,
+        content=content,
+        page_start=0,  # D-53: no page info available from Markdown string
+        page_end=0,  # D-53
+        section_title=section_title,
+        chunk_index=chunk_index,
+        total_chunks=total_chunks,
+        word_count=len(content.split()),  # D-55
+    )
+
+
+def _subdivide_by_paragraph(
+    section_content: str,
+    section_title: str,
+    max_words: int,
+) -> list[tuple[str, str]]:
+    """Subdivide a section's content into paragraph-bounded sub-chunks.
+
+    Accumulates paragraphs (separated by double newlines) until the word
+    count would exceed ``max_words``. When the budget is exceeded, the
+    current accumulation is flushed as a sub-chunk and a new one starts.
+    Never cuts inside a paragraph (D-47).
+
+    Args:
+        section_content: The full text content of one heading section.
+        section_title: The heading title preserved for all sub-chunks (D-56).
+        max_words: Word budget per sub-chunk (D-48). Measured via len(split()).
+
+    Returns:
+        List of (content, section_title) pairs — one per sub-chunk.
+        The section_title is identical for all returned pairs.
+    """
+    # Split on double-newline paragraph boundaries
+    paragraphs = re.split(r"\n\n+", section_content)
+    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+
+    if not paragraphs:
+        return []
+
+    result: list[tuple[str, str]] = []
+    current_paragraphs: list[str] = []
+    current_words = 0
+
+    for paragraph in paragraphs:
+        para_words = len(paragraph.split())
+
+        if current_paragraphs and current_words + para_words > max_words:
+            # Flush current accumulation as a sub-chunk
+            result.append(("\n\n".join(current_paragraphs), section_title))
+            current_paragraphs = [paragraph]
+            current_words = para_words
+        else:
+            current_paragraphs.append(paragraph)
+            current_words += para_words
+
+    # Flush the final accumulation
+    if current_paragraphs:
+        result.append(("\n\n".join(current_paragraphs), section_title))
+
+    return result
 
 
 class MarkdownChunker:
@@ -73,6 +163,10 @@ class MarkdownChunker:
         self._max_tokens = max_tokens
         self._encoder: tiktoken.Encoding = tiktoken.get_encoding(_ENCODING_NAME)
 
+    # ------------------------------------------------------------------
+    # Public ChunkerPort interface
+    # ------------------------------------------------------------------
+
     def chunk(self, content: str) -> list[DocumentChunk]:
         """Split Markdown content into DocumentChunk objects.
 
@@ -87,15 +181,37 @@ class MarkdownChunker:
             List of DocumentChunk objects with all CHUNK-03 fields populated.
 
         Raises:
-            NotImplementedError: Implementation pending (Plan 04-02).
             ChunkingError: Unexpected error during chunking (D-16).
                 SelectionMaidError subclasses propagate unchanged.
         """
         try:
-            raise NotImplementedError(
-                "MarkdownChunker.chunk() is not yet implemented. "
-                "Implementation is scheduled for Phase 4 Plan 02."
-            )
+            stripped = content.strip()
+            if not stripped:
+                return []
+
+            if _H1_H2_PATTERN.search(stripped):
+                raw_pairs = self._heading_split(stripped)
+            else:
+                raw_pairs = self._fixed_size_split(stripped)
+
+            # Second pass: assign chunk_index and total_chunks (D-57)
+            total = len(raw_pairs)
+            if total == 0:
+                return []
+
+            chunks: list[DocumentChunk] = []
+            for index, (text, title) in enumerate(raw_pairs):
+                chunks.append(
+                    _make_chunk(
+                        content=text,
+                        section_title=title,
+                        chunk_index=index,
+                        total_chunks=total,
+                        chunk_id=str(uuid.uuid4()),  # D-54
+                    )
+                )
+            return chunks
+
         except SelectionMaidError:
             raise
         except Exception as exc:
@@ -103,6 +219,105 @@ class MarkdownChunker:
                 f"Chunking failed: {exc}",
                 cause=exc,
             ) from exc
+
+    # ------------------------------------------------------------------
+    # Private strategy implementations
+    # ------------------------------------------------------------------
+
+    def _heading_split(self, content: str) -> list[tuple[str, str]]:
+        """Primary heading-based split strategy (D-45, D-46, D-47, D-56).
+
+        Iterates line-by-line. When an H1 or H2 heading is encountered,
+        the accumulated content is flushed as a section. Pre-heading text
+        is captured with section_title="" (D-46). Sections that exceed
+        ``_max_tokens`` words are further subdivided by paragraph (D-47).
+
+        Args:
+            content: Non-empty stripped Markdown string with at least one H1/H2.
+
+        Returns:
+            List of (content, section_title) pairs before index assignment.
+        """
+        lines = content.splitlines()
+
+        # Accumulated raw sections before paragraph subdivision
+        # Each element: (list_of_lines, section_title)
+        sections: list[tuple[list[str], str]] = []
+        current_lines: list[str] = []
+        current_title: str = ""
+
+        for line in lines:
+            match = re.match(r"^#{1,2}\s+(.+)", line)
+            if match:
+                # Flush the accumulated content as a section
+                if current_lines:
+                    sections.append((current_lines, current_title))
+                # Start a new section with this heading
+                current_lines = [line]
+                current_title = match.group(1).strip()
+            else:
+                current_lines.append(line)
+
+        # Flush the final section
+        if current_lines:
+            sections.append((current_lines, current_title))
+
+        # Subdivide oversized sections (D-47, D-48) and collect final pairs
+        raw_pairs: list[tuple[str, str]] = []
+        for section_lines, title in sections:
+            section_text = "\n".join(section_lines).strip()
+            if not section_text:
+                continue
+
+            section_words = len(section_text.split())
+            if section_words > self._max_tokens:
+                sub_pairs = _subdivide_by_paragraph(
+                    section_text, title, self._max_tokens
+                )
+                raw_pairs.extend(sub_pairs)
+            else:
+                raw_pairs.append((section_text, title))
+
+        return raw_pairs
+
+    def _fixed_size_split(self, content: str) -> list[tuple[str, str]]:
+        """Fixed-size fallback strategy using tiktoken (D-49, D-50, D-52).
+
+        Accumulates paragraphs until the token budget (``_max_tokens``) is
+        reached. Never cuts inside a paragraph (D-52). All chunks receive
+        section_title="" (D-56).
+
+        Args:
+            content: Non-empty stripped Markdown string with no H1/H2 headings.
+
+        Returns:
+            List of (content, section_title) pairs before index assignment.
+        """
+        paragraphs = re.split(r"\n\n+", content)
+        paragraphs = [p.strip() for p in paragraphs if p.strip()]
+
+        if not paragraphs:
+            return []
+
+        raw_pairs: list[tuple[str, str]] = []
+        current_paragraphs: list[str] = []
+        current_tokens = 0
+
+        for paragraph in paragraphs:
+            para_tokens = len(self._encoder.encode(paragraph))
+
+            if current_paragraphs and current_tokens + para_tokens > self._max_tokens:
+                raw_pairs.append(("\n\n".join(current_paragraphs), ""))
+                current_paragraphs = [paragraph]
+                current_tokens = para_tokens
+            else:
+                current_paragraphs.append(paragraph)
+                current_tokens += para_tokens
+
+        if current_paragraphs:
+            raw_pairs.append(("\n\n".join(current_paragraphs), ""))
+
+        return raw_pairs
 
 
 def build_markdown_chunker(config: ChunkerConfig) -> MarkdownChunker:
