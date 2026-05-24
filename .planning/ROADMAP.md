@@ -162,7 +162,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — Domain model refinement (renaming/adding fields) and infrastructure setup (langdetect)
+- [x] 05-01-PLAN.md — Domain model refinement (renaming/adding fields) and infrastructure setup (langdetect)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -228,6 +228,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Docling Extraction Adapter | 5/5 | Complete   | 2026-05-24 |
 | 3. Content Filtering | 3/3 | Complete | 2026-05-24 |
 | 4. Chunking | 3/3 | Complete | 2026-05-24 |
-| 5. Metadata Enrichment | 0/3 | Not started | - |
+| 5. Metadata Enrichment | 1/3 | In Progress|  |
 | 6. HTTP API Layer | 0/4 | Not started | - |
 | 7. Integration Hardening | 0/4 | Not started | - |

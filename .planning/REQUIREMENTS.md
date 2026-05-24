@@ -29,7 +29,7 @@
 
 ### Metadata
 
-- [ ] **META-01**: API retorna metadados do documento: título, autor, idioma detectado, tipo de documento, número de páginas, contagem de chunks, data de ingestão
+- [x] **META-01**: API retorna metadados do documento: título, autor, idioma detectado, tipo de documento, número de páginas, contagem de chunks, data de ingestão
 - [ ] **META-02**: Idioma do documento é detectado automaticamente e retornado em formato ISO 639-1 (ex: "pt", "en", "es")
 - [ ] **META-03**: Tipo de documento é inferido e categorizado em vocabulário fechado (article, report, presentation, form, legal, other)
 
@@ -41,7 +41,7 @@
 
 ### Architecture
 
-- [ ] **ARCH-01**: Extração é encapsulada atrás de `ExtractorPort` (`typing.Protocol`) — nenhum tipo Docling vaza para domínio ou serviço
+- [x] **ARCH-01**: Extração é encapsulada atrás de `ExtractorPort` (`typing.Protocol`) — nenhum tipo Docling vaza para domínio ou serviço
 - [ ] **ARCH-02**: Filtragem é encapsulada atrás de `FilterPort` (`typing.Protocol`) com adaptador substituível
 - [ ] **ARCH-03**: Chunking é encapsulado atrás de `ChunkerPort` (`typing.Protocol`) com adaptador substituível
 - [ ] **ARCH-04**: Enriquecimento de metadados é encapsulado atrás de `MetadataEnricherPort` (`typing.Protocol`) com adaptador substituível
@@ -90,7 +90,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARCH-01 | Phase 1 | Pending |
+| ARCH-01 | Phase 1 | Complete |
 | ARCH-02 | Phase 1 | Pending |
 | ARCH-03 | Phase 1 | Pending |
 | ARCH-04 | Phase 1 | Pending |
@@ -109,7 +109,7 @@
 | CHUNK-01 | Phase 4 | Pending |
 | CHUNK-02 | Phase 4 | Pending |
 | CHUNK-03 | Phase 4 | Pending |
-| META-01 | Phase 5 | Pending |
+| META-01 | Phase 5 | Complete |
 | META-02 | Phase 5 | Pending |
 | META-03 | Phase 5 | Pending |
 | API-01 | Phase 6 | Pending |
