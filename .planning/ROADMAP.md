@@ -68,15 +68,28 @@ Plans:
   6. Nenhum tipo do namespace `docling` aparece fora do módulo `adapters/extractor/` — mypy confirma boundary
   7. Conversão excede 120 segundos lança `ExtractionTimeoutError` sem travar o processo
 
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
+**Wave 1**
 
-- [ ] 02-01: Setup Docling CPU-only, singleton DocumentConverter e estrutura do DoclingAdapter
-- [ ] 02-02: Implementar extração de PDF, DOCX, HTML com mapeamento para RawDocument
-- [ ] 02-03: Preservação de headings, tabelas, listas e blocos de código no output Markdown
-- [ ] 02-04: Timeout de 120s, tratamento de erros e boundary check (nenhum tipo Docling vaza)
-- [ ] 02-05: Testes de integração com fixtures reais (PDF digital, DOCX com tabelas, HTML)
+- [ ] 02-01-PLAN.md — Install docling CPU-only, DoclingAdapter skeleton, TYPE_CHECKING guard, test infrastructure
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — Implement extract() with ThreadPoolExecutor, RawDocument mapping; EXT-01/02/03 tests
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-04-PLAN.md — Timeout and domain-error-propagation unit tests; mypy boundary verification (ARCH-01)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-03-PLAN.md — Markdown structure tests: headings, GFM tables, lists, code blocks (EXT-04..EXT-07)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-05-PLAN.md — End-to-end ExtractionService integration test; phase gate (full suite + mypy)
 
 ### Phase 3: Content Filtering
 
