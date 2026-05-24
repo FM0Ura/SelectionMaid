@@ -46,8 +46,8 @@ created: 2026-05-23
 | 02-03-02 | 03 | 2 | EXT-05 | — | N/A | integration | `uv run pytest tests/adapters/extractor/test_docling_adapter.py::test_tables_in_docx -x` | ❌ W0 | ⬜ pending |
 | 02-03-03 | 03 | 2 | EXT-06 | — | N/A | integration | `uv run pytest tests/adapters/extractor/test_docling_adapter.py::test_lists_in_html -x` | ❌ W0 | ⬜ pending |
 | 02-03-04 | 03 | 2 | EXT-07 | — | N/A | integration | `uv run pytest tests/adapters/extractor/test_docling_adapter.py::test_code_blocks -x` | ❌ W0 | ⬜ pending |
-| 02-04-01 | 04 | 3 | D-24/D-25 | — | Timeout isolates caller | unit | `uv run pytest tests/adapters/extractor/test_docling_adapter.py::test_timeout -x` | ❌ W0 | ⬜ pending |
-| 02-04-02 | 04 | 3 | D-22 | — | N/A | unit | `uv run pytest tests/adapters/extractor/test_docling_adapter.py::test_unsupported_format -x` | ❌ W0 | ⬜ pending |
+| 02-04-01 | 04 | 3 | D-24/D-25 | — | Timeout isolates caller | unit | `uv run pytest tests/adapters/extractor/test_docling_adapter.py::TestDoclingAdapterUnit::test_timeout_raises_extraction_timeout_error -x` | ❌ W0 | ⬜ pending |
+| 02-04-02 | 04 | 3 | D-22 | — | N/A | unit | `uv run pytest tests/adapters/extractor/test_docling_adapter.py::TestDoclingAdapterUnit::test_unsupported_format_raises -x` | ❌ W0 | ⬜ pending |
 | 02-04-03 | 04 | 3 | ARCH-01 | — | No type leakage | static | `uv run mypy src/ --strict` | ✅ | ⬜ pending |
 | 02-05-01 | 05 | 3 | EXT-01..EXT-07 | — | N/A | integration | `uv run pytest tests/adapters/extractor/ -x -q` | ❌ W0 | ⬜ pending |
 

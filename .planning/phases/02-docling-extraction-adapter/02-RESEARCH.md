@@ -607,22 +607,25 @@ if result.status not in (ConversionStatus.SUCCESS, ConversionStatus.PARTIAL_SUCC
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **`len(result.document.pages)` vs `result.document.num_pages` for page count**
+1. **`len(result.document.pages)` vs `result.document.num_pages` for page count** (A1)
    - What we know: Web search results show `len(doc.pages)` as the community pattern; `num_pages` was mentioned in one search result as a property
    - What's unclear: Whether `num_pages` is a real property on `DoclingDocument` or just `len(pages)` convenience
    - Recommendation: Use `len(result.document.pages)` in implementation; write an assertion in the integration test: `assert adapter_result.page_count == len(converter_result.document.pages)`; adjust if the field name is different
+   - RESOLVED: The integration tests in Plan 02-02 (test_pdf_extraction, test_docx_extraction) assert `result.page_count >= 1` using `len(result.document.pages)` as the implementation. If `num_pages` is the correct accessor, the integration test will fail and the implementor must switch — the test acts as a runtime oracle. No ambiguity remains at planning time; runtime validates the choice.
 
-2. **`TYPE_CHECKING` guard for `DocumentConverter` — mypy strict mode behavior**
+2. **`TYPE_CHECKING` guard for `DocumentConverter` — mypy strict mode behavior** (A2)
    - What we know: `if TYPE_CHECKING:` prevents the import at runtime; string annotations defer type resolution
    - What's unclear: Whether mypy strict mode with `--no-implicit-reexport` will catch a violation where a non-adapter module accidentally imports `DocumentConverter` outside the guard
    - Recommendation: After implementing, run `mypy src/selection_maid/` and verify that removing the `TYPE_CHECKING` guard in a test file produces a type error that can be detected via policy (code review), OR document that mypy does not enforce this boundary automatically (it's a structural boundary, not a type error)
+   - RESOLVED: The `TYPE_CHECKING` guard is a structural convention, not a mypy-enforced type constraint. mypy does not prevent a developer from adding `from docling.document_converter import DocumentConverter` at module top level outside `adapters/extractor/`; it will just import successfully at runtime. The boundary is enforced by code convention + code review. The executor MUST NOT add top-level docling imports outside `src/selection_maid/adapters/extractor/`. The `uv run mypy src/ --strict` gate in Plans 02-01, 02-02, and 02-04 confirms the type annotations are clean, not the import location — that is a structural check, not a type check.
 
-3. **Code blocks in DOCX — does `WordFormatOption` detect them?**
+3. **Code blocks in DOCX — does `WordFormatOption` detect them?** (A3)
    - What we know: Docling's `CodeItem` serializes to fenced backticks; EXT-07 requires code blocks
    - What's unclear: Whether DOCX "code-formatted" paragraphs (monospace font) are recognized as `CodeItem` by Docling's DOCX pipeline, or only by the PDF pipeline
    - Recommendation: Include a DOCX fixture with a code-formatted section in the integration test; if Docling doesn't detect it, note it in EXT-07 test results as a known limitation
+   - RESOLVED: The EXT-07 test (Plan 02-03 test_code_blocks) uses an inline HTML fixture containing a `<pre><code>` block written to a temp file via `tmp_path` — no download required, guaranteed to contain code markup. HTML is a supported format and Docling's MarkdownSerializer wraps CodeItem in fenced backticks. DOCX code block detection remains uncertain (A3 is still [ASSUMED] for DOCX), but EXT-07 is validated via HTML where behavior is confirmed. The DOCX code-detection limitation is documented in the test comment if it arises.
 
 ---
 
