@@ -166,7 +166,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-02-PLAN.md — Implement MetadataEnricher with language detection and doc_type inference logic
+- [x] 05-02-PLAN.md — Implement MetadataEnricher with language detection and doc_type inference logic
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -228,6 +228,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Docling Extraction Adapter | 5/5 | Complete   | 2026-05-24 |
 | 3. Content Filtering | 3/3 | Complete | 2026-05-24 |
 | 4. Chunking | 3/3 | Complete | 2026-05-24 |
-| 5. Metadata Enrichment | 1/3 | In Progress|  |
+| 5. Metadata Enrichment | 2/3 | In Progress|  |
 | 6. HTTP API Layer | 0/4 | Not started | - |
 | 7. Integration Hardening | 0/4 | Not started | - |
