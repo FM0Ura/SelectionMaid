@@ -13,7 +13,7 @@ SelectionMaid é construído de dentro para fora, seguindo a regra de dependênc
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Domain Foundation** - Modelos de domínio, ports (Protocols) e ExtractionService com stubs
+- [x] **Phase 1: Domain Foundation** - Modelos de domínio, ports (Protocols) e ExtractionService com stubs (completed 2026-05-23)
 - [x] **Phase 2: Docling Extraction Adapter** - DoclingAdapter com singleton lifespan, timeout, CPU-only, testes com docs reais (completed 2026-05-24)
 - [ ] **Phase 3: Content Filtering** - HeuristicFilter para headers/footers, números de página e whitespace excessivo
 - [ ] **Phase 4: Chunking** - MarkdownChunker com split por heading e fallback fixed-size com token budget
@@ -41,17 +41,17 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01: Criar estrutura de pacotes hexagonal e dataclasses de domínio frozen
-- [ ] 01-02: Definir os quatro Ports como typing.Protocol com assinaturas de domínio
+- [x] 01-01: Criar estrutura de pacotes hexagonal e dataclasses de domínio frozen
+- [x] 01-02: Definir os quatro Ports como typing.Protocol com assinaturas de domínio
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-03: Implementar ExtractionService com injeção de construtor e pipeline orquestrado
-- [ ] 01-04: Taxonomia de erros de domínio (ExtractionError, FilterError, ChunkingError, UnsupportedFormatError)
+- [x] 01-03: Implementar ExtractionService com injeção de construtor e pipeline orquestrado
+- [x] 01-04: Taxonomia de erros de domínio (ExtractionError, FilterError, ChunkingError, UnsupportedFormatError)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-05: Testes unitários do pipeline completo com stubs e validação de boundary
+- [x] 01-05: Testes unitários do pipeline completo com stubs e validação de boundary
 
 ### Phase 2: Docling Extraction Adapter
 
@@ -103,13 +103,13 @@ Plans:
   3. Sequências de duas ou mais linhas em branco são comprimidas para exatamente uma linha em branco
   4. Conteúdo legítimo (parágrafos, headings, tabelas) não é removido pelo filtro em nenhum dos casos de teste
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 
-- [ ] 03-01: Implementar HeuristicFilter com detecção de headers/footers por frequência
-- [ ] 03-02: Remoção de linhas de número de página e compressão de whitespace
-- [ ] 03-03: Testes com fixtures de documentos ruidosos e verificação de conteúdo preservado
+- [ ] 03-01-PLAN.md — Centralized configuration management via selection_maid.config and config.toml
+- [ ] 03-02-PLAN.md — Implement HeuristicFilter logic and rule-based unit tests (FILT-01/02/03)
+- [ ] 03-03-PLAN.md — Factory function and ExtractionService integration verification
 
 ### Phase 4: Chunking
 
@@ -203,9 +203,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Domain Foundation | 0/5 | Not started | - |
+| 1. Domain Foundation | 5/5 | Complete | 2026-05-23 |
 | 2. Docling Extraction Adapter | 5/5 | Complete   | 2026-05-24 |
-| 3. Content Filtering | 0/3 | Not started | - |
+| 3. Content Filtering | 0/3 | Planned | - |
 | 4. Chunking | 0/3 | Not started | - |
 | 5. Metadata Enrichment | 0/3 | Not started | - |
 | 6. HTTP API Layer | 0/4 | Not started | - |

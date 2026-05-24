@@ -3,40 +3,40 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Phase 3 context gathered
-last_updated: "2026-05-24T17:09:07.987Z"
-last_activity: 2026-05-24 -- Phase 2 marked complete
+stopped_at: Phase 3 planning complete
+last_updated: "2026-05-24T18:00:00.000Z"
+last_activity: 2026-05-24 -- Phase 3 planned
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 10
+  total_plans: 27
   completed_plans: 10
-  percent: 29
+  percent: 37
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-23)
+See: .planning/PROJECT.md
 
 **Core value:** Documentos entram em qualquer formato suportado, chunks Markdown normalizados saem via interface estável — independente da biblioteca de extração ou protocolo de entrada usados.
-**Current focus:** Phase 2 — Docling Extraction Adapter
+**Current focus:** Phase 3 — Content Filtering
 
 ## Current Position
 
-Phase: 2 — COMPLETE
-Plan: 1 of 5
-Status: Phase 2 complete
-Last activity: 2026-05-24 -- Phase 2 marked complete
+Phase: 3 — PLANNED
+Plan: 0 of 3
+Status: Phase 3 plans created
+Last activity: 2026-05-24 -- Phase 3 planned
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████░░░░░░] 37%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 10
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -44,7 +44,8 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1 | 5 | - | - |
+| 2 | 5 | - | - |
 
 **Recent Trend:**
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - Docling como ExtractorPort inicial — suporte nativo multi-formato + exportação Markdown de qualidade
 - FastAPI como InputPort inicial — adequado para volume on-demand
 - Ordem de build: domínio → DoclingAdapter → filtro → chunker → enricher → HTTP → hardening
+- HeuristicFilter (Phase 3): detecção de headers/footers por frequência, remoção de números de página e compressão de whitespace via stdlib (D-31..D-37)
+- Centralized config (Phase 3): uso de config.toml e tomllib (D-38..D-40)
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-24T17:09:07.932Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-content-filtering/03-CONTEXT.md
+Last session: 2026-05-24T18:00:00.000Z
+Stopped at: Phase 3 planning complete
+Resume file: .planning/phases/03-content-filtering/03-01-PLAN.md
