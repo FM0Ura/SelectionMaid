@@ -139,43 +139,49 @@ class TestDocumentChunk:
 class TestDocumentMetadata:
     """DocumentMetadata frozen dataclass tests — META-01 field compliance."""
 
-    def test_document_metadata_has_all_seven_fields(self) -> None:
+    def test_document_metadata_has_all_nine_fields(self) -> None:
         from selection_maid.domain.models import DocumentMetadata
 
         meta = DocumentMetadata(
+            doc_id="test-doc-id",
+            source_filename="my_document.pdf",
             title="My Document",
             author="John Doe",
             language="pt",
-            document_type="report",
+            doc_type="report",
             page_count=10,
             chunk_count=20,
-            ingestion_date=datetime(2026, 5, 23, 12, 0, 0),
+            ingested_at=datetime(2026, 5, 23, 12, 0, 0),
         )
+        assert meta.doc_id == "test-doc-id"
+        assert meta.source_filename == "my_document.pdf"
         assert meta.title == "My Document"
         assert meta.author == "John Doe"
         assert meta.language == "pt"
-        assert meta.document_type == "report"
+        assert meta.doc_type == "report"
         assert meta.page_count == 10
         assert meta.chunk_count == 20
-        assert isinstance(meta.ingestion_date, datetime)
+        assert isinstance(meta.ingested_at, datetime)
 
-    def test_document_metadata_field_count_is_exactly_seven(self) -> None:
+    def test_document_metadata_field_count_is_exactly_nine(self) -> None:
         from selection_maid.domain.models import DocumentMetadata
 
         fields = dataclasses.fields(DocumentMetadata)
-        assert len(fields) == 7, f"Expected 7 fields per META-01, got {len(fields)}"
+        assert len(fields) == 9, f"Expected 9 fields per META-01, got {len(fields)}"
 
     def test_document_metadata_is_frozen(self) -> None:
         from selection_maid.domain.models import DocumentMetadata
 
         meta = DocumentMetadata(
+            doc_id="frozen-test-id",
+            source_filename="frozen.pdf",
             title="Title",
             author="Author",
             language="en",
-            document_type="report",
+            doc_type="report",
             page_count=1,
             chunk_count=1,
-            ingestion_date=datetime(2026, 1, 1),
+            ingested_at=datetime(2026, 1, 1),
         )
         with pytest.raises(dataclasses.FrozenInstanceError):
             meta.title = "Changed"  # type: ignore[misc]
@@ -198,13 +204,15 @@ class TestExtractionResult:
 
     def _make_metadata(self) -> DocumentMetadata:
         return DocumentMetadata(
+            doc_id="extraction-result-id",
+            source_filename="result.pdf",
             title="Title",
             author="Author",
             language="en",
-            document_type="report",
+            doc_type="report",
             page_count=3,
             chunk_count=3,
-            ingestion_date=datetime(2026, 5, 23),
+            ingested_at=datetime(2026, 5, 23),
         )
 
     def test_extraction_result_chunks_is_tuple(self) -> None:

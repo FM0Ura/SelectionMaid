@@ -67,13 +67,15 @@ class TestPipeline:
     ) -> None:
         result = stub_service.process(raw_input)
         meta = result.metadata
+        assert meta.doc_id
+        assert meta.source_filename
         assert meta.title
         assert meta.author
         assert meta.language == "en"
-        assert meta.document_type
+        assert meta.doc_type
         assert meta.page_count >= 0
         assert meta.chunk_count == 1
-        assert meta.ingestion_date is not None
+        assert meta.ingested_at is not None
 
     def test_metadata_chunk_count_matches(
         self, stub_service: ExtractionService, raw_input: RawInput
