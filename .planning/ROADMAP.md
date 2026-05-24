@@ -156,13 +156,21 @@ Plans:
   3. `doc_type` é um dos valores do vocabulário fechado: `article`, `report`, `presentation`, `form`, `legal`, `other` — nunca retorna valor fora do enum
   4. `ingested_at` contém timestamp ISO 8601 da ingestão (não da criação do arquivo)
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 
-- [ ] 05-01: Implementar MetadataEnricher com detecção de idioma via langdetect
-- [ ] 05-02: Inferência de doc_type com vocabulário fechado e montagem dos campos completos
-- [ ] 05-03: Testes com documentos em PT, EN, ES e verificação dos campos de metadata
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Domain model refinement (renaming/adding fields) and infrastructure setup (langdetect)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 05-02-PLAN.md — Implement MetadataEnricher with language detection and doc_type inference logic
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 05-03-PLAN.md — Verification with multilingual documents and edge case handling
 
 ### Phase 6: HTTP API Layer
 
@@ -174,7 +182,7 @@ Plans:
   1. `POST /ingest` com um PDF válido via multipart/form-data retorna HTTP 200 com `ExtractionResponse` contendo `metadata` e lista `chunks` não-vazia
   2. `GET /health` retorna HTTP 200 com status e RSS atual do processo em MB
   3. Upload de arquivo acima do tamanho máximo retorna HTTP 413; arquivo com MIME type inválido retorna HTTP 415; magic bytes inconsistentes retornam HTTP 422
-  4. O router não contém lógica de negócio — é instanciado via `build_router(service)` factory e delega toda extração ao `ExtractionService`
+  4. O router não contém lógica de negócio — é instanciado via `build_router(service) factory e delega toda extração ao `ExtractionService`
   5. Chamada a `POST /ingest` com documento pesado não bloqueia o event loop — confirmado via teste de concorrência com dois requests simultâneos
 
 **Plans**: TBD
