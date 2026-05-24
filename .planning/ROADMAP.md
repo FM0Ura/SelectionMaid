@@ -14,7 +14,7 @@ SelectionMaid é construído de dentro para fora, seguindo a regra de dependênc
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Domain Foundation** - Modelos de domínio, ports (Protocols) e ExtractionService com stubs
-- [ ] **Phase 2: Docling Extraction Adapter** - DoclingAdapter com singleton lifespan, timeout, CPU-only, testes com docs reais
+- [x] **Phase 2: Docling Extraction Adapter** - DoclingAdapter com singleton lifespan, timeout, CPU-only, testes com docs reais (completed 2026-05-24)
 - [ ] **Phase 3: Content Filtering** - HeuristicFilter para headers/footers, números de página e whitespace excessivo
 - [ ] **Phase 4: Chunking** - MarkdownChunker com split por heading e fallback fixed-size com token budget
 - [ ] **Phase 5: Metadata Enrichment** - MetadataEnricher com detecção de idioma, inferência de doc_type e campos completos
@@ -73,23 +73,23 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Install docling CPU-only, DoclingAdapter skeleton, TYPE_CHECKING guard, test infrastructure
+- [x] 02-01-PLAN.md — Install docling CPU-only, DoclingAdapter skeleton, TYPE_CHECKING guard, test infrastructure
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — Implement extract() with ThreadPoolExecutor, RawDocument mapping; EXT-01/02/03 tests
+- [x] 02-02-PLAN.md — Implement extract() with ThreadPoolExecutor, RawDocument mapping; EXT-01/02/03 tests
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-04-PLAN.md — Timeout and domain-error-propagation unit tests; mypy boundary verification (ARCH-01)
+- [x] 02-04-PLAN.md — Timeout and domain-error-propagation unit tests; mypy boundary verification (ARCH-01)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-03-PLAN.md — Markdown structure tests: headings, GFM tables, lists, code blocks (EXT-04..EXT-07)
+- [x] 02-03-PLAN.md — Markdown structure tests: headings, GFM tables, lists, code blocks (EXT-04..EXT-07)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-05-PLAN.md — End-to-end ExtractionService integration test; phase gate (full suite + mypy)
+- [x] 02-05-PLAN.md — End-to-end ExtractionService integration test; phase gate (full suite + mypy)
 
 ### Phase 3: Content Filtering
 
@@ -204,7 +204,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Domain Foundation | 0/5 | Not started | - |
-| 2. Docling Extraction Adapter | 0/5 | Not started | - |
+| 2. Docling Extraction Adapter | 5/5 | Complete   | 2026-05-24 |
 | 3. Content Filtering | 0/3 | Not started | - |
 | 4. Chunking | 0/3 | Not started | - |
 | 5. Metadata Enrichment | 0/3 | Not started | - |
