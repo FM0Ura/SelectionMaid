@@ -66,19 +66,31 @@ class ChunkerConfig:
 
 
 @dataclass
+class EnricherConfig:
+    """Configuration for the MetadataEnricher adapter (D-72, D-73).
+
+    Empty for v1 — all enricher parameters (language confidence threshold,
+    doc_type keywords) are module-level constants. This dataclass is
+    defined here to establish the config pattern for future extensibility
+    (e.g., language_confidence_threshold in v2).
+    """
+
+
+@dataclass
 class GlobalConfig:
     """Top-level configuration container.
 
-    Holds per-adapter configuration sections. Future phases (enricher)
-    will add their own nested dataclasses here.
+    Holds per-adapter configuration sections.
 
     Attributes:
         filter: Filter adapter thresholds.
         chunker: Chunker adapter parameters.
+        enricher: Enricher adapter parameters.
     """
 
     filter: FilterConfig = field(default_factory=FilterConfig)
     chunker: ChunkerConfig = field(default_factory=ChunkerConfig)
+    enricher: EnricherConfig = field(default_factory=EnricherConfig)
 
 
 def get_config(config_path: Path | None = None) -> GlobalConfig:
@@ -124,4 +136,8 @@ def get_config(config_path: Path | None = None) -> GlobalConfig:
         max_tokens=_as_int(chunker_raw.get("max_tokens"), ChunkerConfig.max_tokens),
     )
 
-    return GlobalConfig(filter=filter_cfg, chunker=chunker_cfg)
+    # EnricherConfig has no configurable fields in v1; read [enricher] section
+    # to allow future extensions without changing the call site.
+    enricher_cfg = EnricherConfig()
+
+    return GlobalConfig(filter=filter_cfg, chunker=chunker_cfg, enricher=enricher_cfg)
