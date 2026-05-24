@@ -8,7 +8,7 @@ Decision references:
 - D-84: DocumentConverter singleton created in @asynccontextmanager lifespan;
         lifespan wires all adapters + ExtractionService, then includes router
         (NOT @app.on_event which is deprecated since FastAPI 0.95.0)
-- D-85: build_router(service) closure pattern — router included after lifespan wiring
+- D-85: build_router(service, config) closure pattern — router included after lifespan wiring
 - D-86: app.state.start_time = datetime.now(UTC) set in lifespan for /health uptime
 
 Uvicorn entry point:
@@ -76,8 +76,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         enricher=enricher,
     )
 
-    # Build router with closure capturing service (D-85) and include in app
-    router = build_router(service)
+    # Build router with closure capturing service and config (D-85) and include in app
+    router = build_router(service, config)
     app.include_router(router)
 
     logger.info("SelectionMaid ready.")

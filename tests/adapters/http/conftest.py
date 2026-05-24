@@ -20,6 +20,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from selection_maid.adapters.http.router import build_router
+from selection_maid.config import get_config
 from selection_maid.service import ExtractionService
 
 
@@ -43,7 +44,7 @@ def client(mock_service: MagicMock) -> TestClient:
     @asynccontextmanager
     async def _test_lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.start_time = datetime.now(timezone.utc)
-        router = build_router(mock_service)
+        router = build_router(mock_service, get_config())
         app.include_router(router)
         yield
 
