@@ -33,17 +33,32 @@ class FilterConfig:
 
 
 @dataclass
+class ChunkerConfig:
+    """Configuration for the MarkdownChunker adapter (D-51, D-57, D-58).
+
+    Attributes:
+        max_tokens: Maximum token budget per chunk for the fixed-size fallback
+            strategy (D-51). Also used as the section-subdivision limit for
+            heading-based chunking (D-48). Default 512.
+    """
+
+    max_tokens: int = 512
+
+
+@dataclass
 class GlobalConfig:
     """Top-level configuration container.
 
-    Holds per-adapter configuration sections. Future phases (chunker, enricher)
+    Holds per-adapter configuration sections. Future phases (enricher)
     will add their own nested dataclasses here.
 
     Attributes:
         filter: Filter adapter thresholds.
+        chunker: Chunker adapter parameters.
     """
 
     filter: FilterConfig = field(default_factory=FilterConfig)
+    chunker: ChunkerConfig = field(default_factory=ChunkerConfig)
 
 
 def get_config(config_path: Path | None = None) -> GlobalConfig:
@@ -81,4 +96,12 @@ def get_config(config_path: Path | None = None) -> GlobalConfig:
         max_line_len=int(filter_raw.get("max_line_len", FilterConfig.max_line_len)),  # type: ignore[arg-type]
     )
 
-    return GlobalConfig(filter=filter_cfg)
+    chunker_raw: dict[str, object] = {}
+    if isinstance(raw.get("chunker"), dict):
+        chunker_raw = raw["chunker"]  # type: ignore[assignment]
+
+    chunker_cfg = ChunkerConfig(
+        max_tokens=int(chunker_raw.get("max_tokens", ChunkerConfig.max_tokens)),  # type: ignore[arg-type]
+    )
+
+    return GlobalConfig(filter=filter_cfg, chunker=chunker_cfg)

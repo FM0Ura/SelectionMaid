@@ -6,3 +6,8 @@
 min_repeat = 3
 # Maximum character length for a header/footer candidate line (D-32)
 max_line_len = 80
+
+[chunker]
+# Maximum token budget per chunk for the fixed-size fallback strategy (D-51)
+# Also used as the section-subdivision limit for heading-based chunking (D-48)
+max_tokens = 512
