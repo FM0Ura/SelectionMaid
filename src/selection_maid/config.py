@@ -9,6 +9,7 @@ Usage:
 
     cfg = get_config()
     threshold = cfg.filter.min_repeat  # int, default 3
+    max_bytes = cfg.http.max_file_bytes  # int, default 52_428_800 (50MB)
 """
 from __future__ import annotations
 
@@ -34,6 +35,26 @@ def _as_int(value: object, default: int) -> int:
     """
     if isinstance(value, int):
         return value
+    return default
+
+
+def _as_list_str(value: object, default: list[str]) -> list[str]:
+    """Safely cast a TOML value to list[str], falling back to default.
+
+    TOML arrays of strings are represented as Python ``list[str]`` by tomllib.
+    This helper ensures type safety for mypy strict mode when the raw dict
+    value has type ``object``.
+
+    Args:
+        value: Raw value from the TOML dict (type is ``object``).
+        default: Fallback value when ``value`` is not a valid ``list[str]``.
+
+    Returns:
+        The value cast to ``list[str]`` if it is a list of strings, else
+        ``default``.
+    """
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return list(value)  # narrow type for mypy
     return default
 
 
@@ -76,6 +97,35 @@ class EnricherConfig:
     """
 
 
+#: Default allowed MIME types for the HTTP upload endpoint (D-80, D-90).
+_DEFAULT_ALLOWED_MIME_TYPES: list[str] = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/html",
+]
+
+
+@dataclass
+class HttpConfig:
+    """Configuration for the FastAPI HTTP adapter (D-89, D-90).
+
+    Controls file upload validation at the HTTP boundary.
+
+    Attributes:
+        max_file_bytes: Maximum accepted file size in bytes.  Requests whose
+            ``Content-Length`` header or actual body exceeds this limit are
+            rejected with HTTP 413.  Defaults to 52_428_800 (50 MB).
+        allowed_mime_types: MIME types accepted by ``POST /ingest``.  Requests
+            declaring a MIME type outside this list are rejected with HTTP 415.
+            Defaults to PDF, DOCX, and HTML only (v1 scope per D-80).
+    """
+
+    max_file_bytes: int = 52_428_800  # 50 MB (D-79, D-90)
+    allowed_mime_types: list[str] = field(
+        default_factory=lambda: list(_DEFAULT_ALLOWED_MIME_TYPES)
+    )
+
+
 @dataclass
 class GlobalConfig:
     """Top-level configuration container.
@@ -86,11 +136,13 @@ class GlobalConfig:
         filter: Filter adapter thresholds.
         chunker: Chunker adapter parameters.
         enricher: Enricher adapter parameters.
+        http: HTTP adapter upload validation parameters.
     """
 
     filter: FilterConfig = field(default_factory=FilterConfig)
     chunker: ChunkerConfig = field(default_factory=ChunkerConfig)
     enricher: EnricherConfig = field(default_factory=EnricherConfig)
+    http: HttpConfig = field(default_factory=HttpConfig)
 
 
 def get_config(config_path: Path | None = None) -> GlobalConfig:
@@ -140,4 +192,23 @@ def get_config(config_path: Path | None = None) -> GlobalConfig:
     # to allow future extensions without changing the call site.
     enricher_cfg = EnricherConfig()
 
-    return GlobalConfig(filter=filter_cfg, chunker=chunker_cfg, enricher=enricher_cfg)
+    http_raw: dict[str, object] = {}
+    if isinstance(raw.get("http"), dict):
+        http_raw = raw["http"]  # type: ignore[assignment]
+
+    http_cfg = HttpConfig(
+        max_file_bytes=_as_int(
+            http_raw.get("max_file_bytes"), HttpConfig.max_file_bytes
+        ),
+        allowed_mime_types=_as_list_str(
+            http_raw.get("allowed_mime_types"),
+            list(_DEFAULT_ALLOWED_MIME_TYPES),
+        ),
+    )
+
+    return GlobalConfig(
+        filter=filter_cfg,
+        chunker=chunker_cfg,
+        enricher=enricher_cfg,
+        http=http_cfg,
+    )

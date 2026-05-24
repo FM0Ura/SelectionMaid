@@ -11,3 +11,15 @@ max_line_len = 80
 # Maximum token budget per chunk for the fixed-size fallback strategy (D-51)
 # Also used as the section-subdivision limit for heading-based chunking (D-48)
 max_tokens = 512
+
+[http]
+# Maximum file size accepted by POST /ingest in bytes (D-79, D-90)
+# Default: 52_428_800 = 50 MB
+max_file_bytes = 52428800
+# MIME types accepted by POST /ingest (D-80, D-90)
+# v1: PDF, DOCX, HTML only
+allowed_mime_types = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/html",
+]
