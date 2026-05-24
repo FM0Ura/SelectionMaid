@@ -1,0 +1,8 @@
+# SelectionMaid configuration
+# All keys are optional — omitting a key uses the hardcoded default (D-38).
+
+[filter]
+# Minimum number of repetitions for a short line to be treated as header/footer (D-34)
+min_repeat = 3
+# Maximum character length for a header/footer candidate line (D-32)
+max_line_len = 80
