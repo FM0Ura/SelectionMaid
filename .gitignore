@@ -30,3 +30,6 @@ tests/fixtures/
 tests/fixtures/*.pdf
 tests/fixtures/*.docx
 tests/fixtures/*.html
+
+.codex/
+.gemini/
