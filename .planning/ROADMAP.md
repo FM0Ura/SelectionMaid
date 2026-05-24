@@ -128,13 +128,21 @@ Plans:
   3. Cada chunk retornado contém todos os campos obrigatórios: `chunk_id`, `page_start`, `page_end`, `section_title`, `chunk_index`, `total_chunks`, `word_count`
   4. `chunk_index` e `total_chunks` são consistentes — `chunk_index` vai de 0 a `total_chunks - 1` e cobre todos os chunks
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 
-- [ ] 04-01: Implementar MarkdownChunker com split por heading boundary
-- [ ] 04-02: Estratégia fallback fixed-size com token budget via tiktoken
-- [ ] 04-03: Campos de metadados por chunk e testes de cobertura de conteúdo
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Configuração centralizada (tiktoken) e esqueleto do MarkdownChunker
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-PLAN.md — Implementação do split por heading boundary e subdivisão de seções grandes
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-03-PLAN.md — Estratégia fallback fixed-size com tiktoken e integração com ExtractionService
 
 ### Phase 5: Metadata Enrichment
 
@@ -210,7 +218,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Domain Foundation | 5/5 | Complete | 2026-05-23 |
 | 2. Docling Extraction Adapter | 5/5 | Complete   | 2026-05-24 |
-| 3. Content Filtering | 0/3 | Planned | - |
+| 3. Content Filtering | 3/3 | Complete | 2026-05-24 |
 | 4. Chunking | 0/3 | Not started | - |
 | 5. Metadata Enrichment | 0/3 | Not started | - |
 | 6. HTTP API Layer | 0/4 | Not started | - |
