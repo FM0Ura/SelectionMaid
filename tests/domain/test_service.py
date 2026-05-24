@@ -78,6 +78,59 @@ class TestPipeline:
         assert result.metadata.chunk_count == len(result.chunks)
 
 
+class TestHeuristicFilterIntegration:
+    """Integration: ExtractionService correctly invokes HeuristicFilter (ARCH-02, D-39)."""
+
+    def test_service_filters_noise_via_heuristic_filter(self, raw_input: RawInput) -> None:
+        """HeuristicFilter removes noise when wired into ExtractionService.process()."""
+        from selection_maid.adapters.filter import HeuristicFilter
+
+        header = "Confidential"
+
+        class NoisyExtractor:
+            def extract(self, document: RawInput) -> RawDocument:
+                noisy_content = (
+                    f"{header}\n\n"
+                    "## Section 1\n\nUseful content here.\n\n"
+                    f"{header}\n\n"
+                    "## Section 2\n\nMore useful content.\n\n"
+                    f"{header}"
+                )
+                return RawDocument(
+                    content=noisy_content,
+                    filename=document.filename,
+                    page_count=3,
+                    format="pdf",
+                )
+
+        class PassthroughChunker:
+            def chunk(self, content: str) -> list[DocumentChunk]:
+                return [
+                    DocumentChunk(
+                        chunk_id="chunk-0",
+                        content=content,
+                        page_start=1,
+                        page_end=1,
+                        section_title="Section 1",
+                        chunk_index=0,
+                        total_chunks=1,
+                        word_count=len(content.split()),
+                    )
+                ]
+
+        service = ExtractionService(
+            NoisyExtractor(),
+            HeuristicFilter(min_repeat=3),
+            PassthroughChunker(),
+            StubEnricher(),
+        )
+        result = service.process(raw_input)
+        chunk_content = result.chunks[0].content
+        assert header not in chunk_content
+        assert "Useful content here." in chunk_content
+        assert "More useful content." in chunk_content
+
+
 class TestExceptionWrapping:
     def test_non_domain_extractor_exception_becomes_extraction_error(
         self, raw_input: RawInput
