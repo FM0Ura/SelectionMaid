@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Domain Foundation** - Modelos de domínio, ports (Protocols) e ExtractionService com stubs (completed 2026-05-23)
 - [x] **Phase 2: Docling Extraction Adapter** - DoclingAdapter com singleton lifespan, timeout, CPU-only, testes com docs reais (completed 2026-05-24)
-- [ ] **Phase 3: Content Filtering** - HeuristicFilter para headers/footers, números de página e whitespace excessivo
+- [x] **Phase 3: Content Filtering** - HeuristicFilter para headers/footers, números de página e whitespace excessivo (completed 2026-05-24)
 - [ ] **Phase 4: Chunking** - MarkdownChunker com split por heading e fallback fixed-size com token budget
 - [ ] **Phase 5: Metadata Enrichment** - MetadataEnricher com detecção de idioma, inferência de doc_type e campos completos
 - [ ] **Phase 6: HTTP API Layer** - Router FastAPI como adaptador de entrada, validação de arquivo, run_in_threadpool
@@ -109,12 +109,12 @@ Plans:
 
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Centralized configuration management via selection_maid.config and config.toml
-- [ ] 03-02-PLAN.md — Implement HeuristicFilter logic and rule-based unit tests (FILT-01/02/03)
+- [x] 03-01-PLAN.md — Centralized configuration management via selection_maid.config and config.toml
+- [x] 03-02-PLAN.md — Implement HeuristicFilter logic and rule-based unit tests (FILT-01/02/03)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-03-PLAN.md — Factory function and ExtractionService integration verification
+- [x] 03-03-PLAN.md — Factory function and ExtractionService integration verification
 
 ### Phase 4: Chunking
 
