@@ -107,8 +107,13 @@ Plans:
 
 Plans:
 
+**Wave 1**
+
 - [ ] 03-01-PLAN.md — Centralized configuration management via selection_maid.config and config.toml
 - [ ] 03-02-PLAN.md — Implement HeuristicFilter logic and rule-based unit tests (FILT-01/02/03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 03-03-PLAN.md — Factory function and ExtractionService integration verification
 
 ### Phase 4: Chunking

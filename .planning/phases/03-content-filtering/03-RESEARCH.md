@@ -160,9 +160,9 @@ def compress_whitespace(content: str) -> str:
 | A1 | Frequency count >= 3 is a sufficient proxy for "3+ consecutive pages" | Summary | Low; short documents might retain noise, but core content is safe. |
 | A2 | Line length <= 80 chars covers most headers/footers | Pattern 1 | Low; standard A4/Letter margins usually limit header width. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **How to handle `config.toml` in different environments (dev/prod)?**
+1. **How to handle `config.toml` in different environments (dev/prod)? (RESOLVED)**
    - Recommendation: Use `config.toml` for local/project defaults and consider environment variables for sensitive overrides in Phase 6.
 
 ## Environment Availability
