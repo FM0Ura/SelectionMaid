@@ -10,20 +10,21 @@ Decision references:
   D-22: SUPPORTED_MIME_TYPES constant -- hardcoded, not configurable via constructor.
   D-23: Factory function build_docling_adapter -- consistent with build_router pattern.
   D-24: Timeout via ThreadPoolExecutor -- lingering thread accepted for v1.
+  D-28: Content from result.document.export_to_markdown().
+  D-29: page_count=0 for HTML; len(result.document.pages) for PDF/DOCX.
   D-30: UnsupportedFormatError raised before Docling call.
 """
 
 from __future__ import annotations
 
-import concurrent.futures  # noqa: F401  (used in Plan 02-02 extract() implementation)
-from pathlib import Path  # noqa: F401  (used in Plan 02-02 extract() implementation)
-from typing import TYPE_CHECKING
+import concurrent.futures
+from typing import TYPE_CHECKING, Any
 
 from selection_maid.domain.models import RawDocument, RawInput
 from selection_maid.errors import (
-    ExtractionError,  # noqa: F401  (used in Plan 02-02 extract() implementation)
-    ExtractionTimeoutError,  # noqa: F401  (used in Plan 02-02 extract() implementation)
-    SelectionMaidError,  # noqa: F401  (used in Plan 02-02 extract() implementation)
+    ExtractionError,
+    ExtractionTimeoutError,
+    SelectionMaidError,
     UnsupportedFormatError,
 )
 
@@ -102,8 +103,56 @@ class DoclingAdapter:
                 f"Unsupported format: {document.mime_type}",
                 format=document.mime_type,
             )
-        # Stub: full implementation (threading + conversion + mapping) in Plan 02-02.
-        raise NotImplementedError("extract() not yet implemented")
+
+        # D-24: wrap the blocking converter.convert() in a thread so we can
+        # apply a timeout without blocking the calling thread indefinitely.
+        # A fresh executor per call is used (Pitfall 5 -- module-level executor
+        # with shutdown(wait=False) on timeout leaves threads orphaned permanently).
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(self._converter.convert, document.path)
+            try:
+                result = future.result(timeout=self._timeout_seconds)
+            except concurrent.futures.TimeoutError as exc:
+                # D-24: translate timeout to domain error before the generic handler
+                raise ExtractionTimeoutError(
+                    f"Conversion exceeded {self._timeout_seconds}s timeout",
+                    cause=exc,
+                ) from exc
+            except SelectionMaidError:
+                # Let domain errors pass through unchanged (D-16 pattern)
+                raise
+            except Exception as exc:
+                raise ExtractionError(
+                    f"Docling conversion failed: {exc}",
+                    cause=exc,
+                ) from exc
+
+        return self._build_raw_document(result, document)
+
+    def _build_raw_document(self, result: Any, document: RawInput) -> RawDocument:
+        """Map a Docling ConversionResult to a domain RawDocument.
+
+        The result parameter is typed as Any to prevent the Docling
+        ConversionResult type from propagating outside adapters/extractor/ (T-02-02).
+
+        Args:
+            result: Docling ConversionResult returned by converter.convert().
+            document: Original RawInput providing filename and mime_type.
+
+        Returns:
+            RawDocument with Markdown content assembled from result.document.
+        """
+        doc = result.document
+        content: str = doc.export_to_markdown()
+        # D-29: HTML has no page concept; use 0. For PDF/DOCX use len(pages).
+        page_count = 0 if document.mime_type == "text/html" else len(doc.pages)
+        fmt = _MIME_TO_FORMAT[document.mime_type]
+        return RawDocument(
+            content=content,
+            filename=document.filename,
+            page_count=page_count,
+            format=fmt,
+        )
 
 
 def build_docling_adapter(
