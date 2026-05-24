@@ -182,17 +182,17 @@ Plans:
   1. `POST /ingest` com um PDF válido via multipart/form-data retorna HTTP 200 com `ExtractionResponse` contendo `metadata` e lista `chunks` não-vazia
   2. `GET /health` retorna HTTP 200 com status e RSS atual do processo em MB
   3. Upload de arquivo acima do tamanho máximo retorna HTTP 413; arquivo com MIME type inválido retorna HTTP 415; magic bytes inconsistentes retornam HTTP 422
-  4. O router não contém lógica de negócio — é instanciado via `build_router(service) factory e delega toda extração ao `ExtractionService`
+  4. O router não contém lógica de negócio — é instanciado via `build_router(service)` factory e delega toda extração ao `ExtractionService`
   5. Chamada a `POST /ingest` com documento pesado não bloqueia o event loop — confirmado via teste de concorrência com dois requests simultâneos
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
-- [ ] 06-01: Schemas Pydantic de request/response (ExtractionResponse, HealthResponse)
-- [ ] 06-02: Implementar router factory build_router(service) com POST /ingest e GET /health
-- [ ] 06-03: Validação de arquivo: tamanho máximo, MIME type e magic bytes
-- [ ] 06-04: run_in_threadpool para CPU-bound e testes de integração da API completa
+- [ ] 06-01-PLAN.md — Pydantic schemas for Request/Response (API-01, API-02)
+- [ ] 06-02-PLAN.md — Router factory and basic endpoints with app lifespan (API-01, API-02, ARCH-05)
+- [ ] 06-03-PLAN.md — 3-layer file validation and configuration (API-03)
+- [ ] 06-04-PLAN.md — run_in_threadpool integration and full API integration tests (API-01, API-02, API-03)
 
 **UI hint**: yes
 
