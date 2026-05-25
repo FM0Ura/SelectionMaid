@@ -11,12 +11,18 @@ SelectionMaid é um serviço de curadoria e normalização de documentos — a "
 ✓ **Hardened API**: 3-layer file validation, concurrent request handling, and memory-safe implementation.
 ✓ **Verified**: 100% test coverage (204 tests) and Nyquist compliance.
 
-## Next Milestone: v2.0 Goals
+## Current Milestone: v2.0 Frontend
 
-- **Extended Formats**: OCR support for scanned PDFs and images, PPTX/XLSX support.
-- **Advanced Chunking**: Configurable chunk size per request, selection of chunking strategy (section vs. fixed).
-- **Observability**: Structured logging with request tracking, processing metrics (time, tokens).
-- **Advanced Metadata**: Confidence scores for inferred fields, XMP/EXIF extraction.
+**Goal:** Criar uma SPA Vue 3 + Vite que expõe todo o pipeline do SelectionMaid com dark mode minimalista e animações de alta qualidade.
+
+**Target features:**
+
+- Upload via drag-and-drop animado com feedback visual rico
+- Loading states (skeleton/shimmer) enquanto o backend processa
+- Revelação dos chunks com stagger animation após a resposta
+- Transições de view suaves entre seções da interface
+- Visualização dos metadados retornados pela API
+- SPA desacoplada consumindo a FastAPI via HTTP (CORS)
 
 ## Core Value
 
@@ -38,31 +44,35 @@ Documentos entram em qualquer formato, chunks Markdown normalizados saem via uma
 
 ### Active (v2.0)
 
-- [ ] Suporte a OCR (Docling OCR) para imagens e PDFs escaneados
-- [ ] Suporte a PPTX e XLSX
-- [ ] Parâmetros de chunking configuráveis por request
-- [ ] Observabilidade e métricas de processamento
-- [ ] Metadata com scores de confiança
+- [ ] Interface de upload via drag-and-drop com feedback visual animado
+- [ ] Loading states (skeleton/shimmer) durante o processamento
+- [ ] Visualização dos chunks com stagger animation na revelação
+- [ ] Transições de view suaves entre seções
+- [ ] Exibição dos metadados retornados pela API
+- [ ] CORS habilitado no backend para consumo pela SPA
 
 ### Out of Scope
 
 - Inserção no banco de dados vetorial — responsabilidade do sistema consumidor
 - Autenticação e autorização — infraestrutura do ambiente de deploy
-- UI / dashboard — API headless
 - Processamento assíncrono com fila (Celery/RQ) — volume on-demand não exige
+- OCR, PPTX/XLSX, chunking configurável, observabilidade — deferidos para v2.1+
 
 ## Context
 
 O SelectionMaid v1.0 estabilizou o pipeline de normalização. O design hexagonal provou seu valor permitindo que a extração via Docling fosse integrada sem poluir o domínio. O sistema é síncrono e eficiente para o volume atual.
 
-O projeto usa Python 3.13+ e Docling como biblioteca de extração primária.
+O v2.0 adiciona uma camada de apresentação (Vue 3 + Vite SPA) completamente desacoplada do backend. O frontend consome a API existente via HTTP sem modificar o núcleo hexagonal.
+
+O projeto usa Python 3.13+ no backend e Vue 3 + Vite no frontend.
 
 ## Constraints
 
-- **Tech Stack**: Python 3.13+
-- **Biblioteca de extração**: Docling (implementação principal do ExtractorPort)
-- **Interface primária**: FastAPI (implementação principal do InputPort)
-- **Arquitetura**: Hexagonal (Ports & Adapters) — não negociável
+- **Backend Stack**: Python 3.13+, FastAPI, Docling — inalterado
+- **Frontend Stack**: Vue 3 + Vite — SPA estática desacoplada
+- **Arquitetura**: Hexagonal (Ports & Adapters) no backend — não negociável
+- **Deploy**: Frontend como SPA separada; backend expõe CORS para o domínio da SPA
+- **Target**: Ferramenta de uso interno (dev) — não requer auth nem acessibilidade WCAG
 
 ## Key Decisions
 
@@ -75,5 +85,25 @@ O projeto usa Python 3.13+ e Docling como biblioteca de extração primária.
 | Markdown como formato de saída normalizado | Preserva hierarquia semântica, legível por LLMs | ✓ Validated |
 | Thread-safety via threading.Lock em DoclingAdapter | Docling é CPU-bound e não thread-safe em algumas operações internas | ✓ Shipped |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+### After each phase transition (via `/gsd-transition`)
+
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+### After each milestone (via `/gsd:complete-milestone`)
+
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-05-25 after v1.0 completion*
+
+Last updated: 2026-05-25 after v2.0 milestone start
