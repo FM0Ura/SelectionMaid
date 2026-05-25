@@ -25,9 +25,13 @@ from __future__ import annotations
 import re
 from collections import Counter
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
 from selection_maid.domain.models import RawDocument
 from selection_maid.errors import FilterError, SelectionMaidError
+
+if TYPE_CHECKING:
+    from selection_maid.config import FilterConfig
 
 # ---------------------------------------------------------------------------
 # Module-level compiled regex constants (D-35)

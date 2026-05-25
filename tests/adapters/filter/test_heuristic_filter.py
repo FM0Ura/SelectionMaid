@@ -12,7 +12,11 @@ from __future__ import annotations
 
 import pytest
 
-from selection_maid.adapters.filter.heuristic import HeuristicFilter
+from selection_maid.adapters.filter.heuristic import (
+    HeuristicFilter,
+    build_heuristic_filter,
+)
+from selection_maid.config import FilterConfig
 from selection_maid.domain.models import RawDocument
 
 
@@ -113,6 +117,23 @@ class TestFILT01Headers:
         # max_line_len=100: IS removed (within length limit)
         result_wide = HeuristicFilter(max_line_len=100).filter(doc)
         assert line_90 not in result_wide.content
+
+
+class TestFactory:
+    """Factory construction for centralized filter config (D-39, D-41)."""
+
+    def test_build_heuristic_filter_uses_explicit_config(self) -> None:
+        """Explicit FilterConfig values configure the generated filter."""
+        repeated = "Quarterly Report"
+        content = "\n\n".join([repeated, "Para A.", repeated, "Para B."])
+        doc = _make_doc(content)
+
+        default_result = build_heuristic_filter().filter(doc)
+        assert default_result.content.count(repeated) == 2
+
+        configured = build_heuristic_filter(FilterConfig(min_repeat=2))
+        configured_result = configured.filter(doc)
+        assert repeated not in configured_result.content
 
 
 class TestFILT02PageNumbers:
