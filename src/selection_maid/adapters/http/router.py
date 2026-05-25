@@ -205,7 +205,7 @@ def build_router(service: ExtractionService, config: GlobalConfig) -> APIRouter:
             # Write UploadFile contents to tempfile with restricted permissions
             # (mode=0o600 — readable only by the owning process, T-06-05).
             with tempfile.NamedTemporaryFile(
-                delete=False, suffix=ext, mode="wb"
+                delete=False, suffix=ext, mode="wb", prefix="selectionmaid_"
             ) as tmp:
                 tmp_path = Path(tmp.name)
                 # Read the file in chunks to avoid loading the entire body into
