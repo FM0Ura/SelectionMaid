@@ -226,34 +226,28 @@ class HeuristicFilter:
 
 
 def build_heuristic_filter(
-    min_repeat: int | None = None,
-    max_line_len: int | None = None,
+    config: "FilterConfig | None" = None,
 ) -> HeuristicFilter:
     """Factory function for HeuristicFilter (D-23/D-39).
 
-    Consistent with the build_docling_adapter() factory pattern. Callers
-    (Phase 3 config integration, tests) use this factory rather than
-    constructing HeuristicFilter directly.
-
-    If ``min_repeat`` or ``max_line_len`` are ``None``, the factory reads the
-    centralized config via :func:`selection_maid.config.get_config` and uses
-    the resolved values (which themselves fall back to hardcoded defaults when
-    no ``config.toml`` is present — D-38/D-39).
+    Consistent with the build_docling_adapter(), build_markdown_chunker() and
+    build_metadata_enricher() factory pattern. Callers (app.py, tests) pass
+    the resolved FilterConfig from get_config().filter; calling without
+    arguments uses centralized config defaults (D-38, D-39).
 
     Args:
-        min_repeat: Minimum repetitions for header/footer removal.
-            ``None`` (default) resolves to ``config.filter.min_repeat`` (3).
-        max_line_len: Maximum line length for header/footer candidates.
-            ``None`` (default) resolves to ``config.filter.max_line_len`` (80).
+        config: FilterConfig instance with resolved configuration values.
+            ``None`` (default) resolves to ``get_config().filter`` (D-38).
+            Use ``get_config().filter`` to obtain from the centralized config.
 
     Returns:
         A fully configured HeuristicFilter instance.
     """
-    from selection_maid.config import get_config  # avoid circular import at module load
+    from selection_maid.config import FilterConfig as _FilterConfig  # noqa: PLC0415
+    from selection_maid.config import get_config  # noqa: PLC0415 avoid circular import
 
-    cfg = get_config()
-    resolved_min_repeat = min_repeat if min_repeat is not None else cfg.filter.min_repeat
-    resolved_max_line_len = (
-        max_line_len if max_line_len is not None else cfg.filter.max_line_len
+    resolved: _FilterConfig = config if config is not None else get_config().filter
+    return HeuristicFilter(
+        min_repeat=resolved.min_repeat,
+        max_line_len=resolved.max_line_len,
     )
-    return HeuristicFilter(min_repeat=resolved_min_repeat, max_line_len=resolved_max_line_len)
