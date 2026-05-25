@@ -1,14 +1,16 @@
 # Architecture Research
 
-**Domain:** Document extraction / RAG ingestion service — hexagonal (ports & adapters)
-**Researched:** 2026-05-23
-**Confidence:** HIGH
+**Domain:** Document extraction / RAG ingestion service — hexagonal backend + Vue 3 SPA frontend
+**Researched:** 2026-05-25 (v2.0 frontend milestone added)
+**Confidence:** HIGH (backend, unchanged from v1.0) / HIGH (frontend patterns, verified via official Vue docs + VueUse docs + FastAPI CORS docs)
 
-## Standard Architecture
+---
+
+## Part 1 — Backend Architecture (v1.0, unchanged)
 
 ### System Overview
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                     INPUT ADAPTERS (Driving Side)                │
 │  ┌──────────────────────┐   ┌──────────────────────────────┐     │
@@ -22,7 +24,7 @@
 │               APPLICATION LAYER (Use-Case Orchestration)         │
 │  ┌───────────────────────────────────────────────────────────┐   │
 │  │  ExtractionService                                         │   │
-│  │   extract(file: bytes, mime: str) → ExtractionResult       │   │
+│  │   process(raw_input: RawInput) → ExtractionResult          │   │
 │  └───┬─────────────┬──────────────┬────────────────┬─────────┘   │
 │      │ via port    │ via port     │ via port       │ via port     │
 └──────┼─────────────┼──────────────┼────────────────┼─────────────┘
@@ -47,425 +49,742 @@
 ### Component Responsibilities
 
 | Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
+| --- | --- | --- |
 | FastAPI router | HTTP boundary: accept file upload, return JSON | `APIRouter` with `UploadFile`, calls `ExtractionService` |
 | Pydantic schemas | HTTP contract: request/response shapes, validation | `BaseModel` classes in `adapters/http/schemas.py` |
 | ExtractionService | Orchestrate the full pipeline: extract → filter → chunk → enrich | Plain Python class, injected with 4 port instances |
-| ExtractorPort | Contract: `extract(data, mime) → RawDocument` | `typing.Protocol` with one required method |
+| ExtractorPort | Contract: `extract(raw_input) → RawDocument` | `typing.Protocol` with one required method |
 | FilterPort | Contract: `filter(raw) → RawDocument` (noise removed) | `typing.Protocol` |
 | ChunkerPort | Contract: `chunk(doc) → list[DocumentChunk]` | `typing.Protocol` |
-| MetadataEnricherPort | Contract: `enrich(chunk, doc) → DocumentChunk` | `typing.Protocol` |
+| MetadataEnricherPort | Contract: `enrich(doc) → DocumentMetadata` | `typing.Protocol` |
 | DoclingAdapter | Wraps `docling.DocumentConverter`; satisfies ExtractorPort | Concrete class; Docling is a private implementation detail |
 | HeuristicFilter | Header/footer/page-number removal heuristics; satisfies FilterPort | Concrete class using regex/positional rules |
-| MarkdownChunker | Splits Markdown at heading boundaries + token count; satisfies ChunkerPort | Concrete class; uses `tiktoken` or `len()` |
-| MetadataEnricher | Infers language, doc type, date, author; satisfies MetadataEnricherPort | Concrete class using `langdetect` or similar |
-| Composition root | Creates concrete adapters; wires them into service; mounts router | `app/main.py` — the only place all layers touch |
-| Domain models | Immutable data containers with no framework dependencies | `@dataclass(frozen=True, slots=True)` |
+| MarkdownChunker | Splits Markdown at heading boundaries + token count; satisfies ChunkerPort | Concrete class; uses `tiktoken` |
+| MetadataEnricher | Infers language, doc type, author; satisfies MetadataEnricherPort | Concrete class using `langdetect` |
+| Composition root | Creates concrete adapters; wires them into service; mounts router | `app.py` + `_lifespan()` — the only place all layers touch |
+| Domain models | Immutable data containers with no framework dependencies | `@dataclass(frozen=True)` |
 
-## Recommended Project Structure
+### Existing Backend File Structure
 
+```text
+src/selection_maid/
+├── domain/
+│   ├── models.py       # RawInput, RawDocument, DocumentChunk, DocumentMetadata, ExtractionResult
+│   └── ports.py        # ExtractorPort, FilterPort, ChunkerPort, MetadataEnricherPort (Protocol)
+├── service.py          # ExtractionService (application layer)
+├── config.py           # GlobalConfig (GlobalConfig, HttpConfig, etc.)
+├── errors.py           # SelectionMaidError taxonomy
+└── adapters/
+    ├── extractor/docling.py      # DoclingAdapter
+    ├── filter/heuristic.py       # HeuristicFilter
+    ├── chunker/markdown.py       # MarkdownChunker
+    ├── enricher/default.py       # MetadataEnricher
+    └── http/
+        ├── app.py       # create_app() + _lifespan(); entry point for uvicorn
+        ├── router.py    # build_router(service, config); GET /health + POST /ingest
+        ├── schemas.py   # ChunkSchema, MetadataSchema, ExtractionResponse, HealthResponse
+        └── error_map.py # ERROR_CODE_TO_HTTP mapping
 ```
-src/
-└── selectionmaid/
-    ├── domain/                    # Pure Python, zero external deps
-    │   ├── __init__.py
-    │   ├── models.py              # RawDocument, DocumentChunk, DocumentMetadata, ExtractionResult
-    │   └── ports.py               # ExtractorPort, FilterPort, ChunkerPort, MetadataEnricherPort
+
+### Existing API Contract (v1.0)
+
+**POST /ingest** — multipart/form-data, field name: `file`
+
+Success response (HTTP 200):
+
+```json
+{
+  "metadata": {
+    "doc_id": "string",
+    "source_filename": "string",
+    "title": "string",
+    "author": "string",
+    "language": "string (ISO 639-1)",
+    "doc_type": "string",
+    "page_count": 0,
+    "chunk_count": 0,
+    "ingested_at": "2026-05-25T00:00:00Z"
+  },
+  "chunks": [
+    {
+      "chunk_id": "string",
+      "content": "string (Markdown)",
+      "page_start": 0,
+      "page_end": 0,
+      "section_title": "string",
+      "chunk_index": 0,
+      "total_chunks": 0,
+      "word_count": 0
+    }
+  ]
+}
+```
+
+Error response (HTTP 4xx/5xx):
+
+```json
+{
+  "error": {
+    "code": "UPLOAD-001",
+    "message": "human-readable description"
+  }
+}
+```
+
+Error codes: `UPLOAD-001` (413 too large), `UPLOAD-002` (422 magic bytes mismatch), `EXT-001` (500 extraction failure), `EXT-002` (415 unsupported MIME).
+
+**GET /health** — no parameters
+
+```json
+{
+  "status": "ok",
+  "rss_mb": 0.0,
+  "uptime_seconds": 0.0,
+  "version": "string"
+}
+```
+
+---
+
+## Part 2 — Frontend Architecture (v2.0, new)
+
+### System Context
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│  Browser                                                 │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │  Vue 3 SPA (localhost:5173 dev / static prod)     │   │
+│  │                                                   │   │
+│  │  DropZone → useUpload composable → ChunksView     │   │
+│  └───────────────────────┬───────────────────────────┘   │
+│                          │ HTTP (CORS)                   │
+└──────────────────────────┼───────────────────────────────┘
+                           │
+                           ▼
+           ┌───────────────────────────────┐
+           │  FastAPI backend              │
+           │  (localhost:8000 dev / prod)  │
+           │                               │
+           │  POST /ingest                 │
+           │  GET  /health                 │
+           └───────────────────────────────┘
+```
+
+The SPA and backend are deployed as separate artifacts. The SPA is a static bundle served by any CDN or simple file server. There is no shared codebase between the two — they communicate exclusively over HTTP.
+
+### Frontend Project Layout
+
+Use **feature-based layout** (not type-based). For an app this size (one feature: document ingestion), a single feature directory is overkill — use a flat composables + components pattern. The layout below is correctly sized for the v2.0 scope.
+
+```text
+frontend/
+├── index.html
+├── vite.config.ts
+├── tsconfig.json
+├── tsconfig.app.json
+├── package.json
+├── .env                    # VITE_API_BASE_URL=http://localhost:8000
+├── .env.production         # VITE_API_BASE_URL=https://api.your-domain.com
+│
+└── src/
+    ├── main.ts             # App entry: createApp(App).mount('#app')
+    ├── App.vue             # Root component: dark-mode wrapper, layout shell
     │
-    ├── application/               # Orchestration only — depends on domain, not on adapters
-    │   ├── __init__.py
-    │   └── extraction_service.py  # ExtractionService
+    ├── api/
+    │   └── ingest.ts       # fetch wrapper — buildFormData, postIngest, ApiError
     │
-    ├── adapters/
-    │   ├── __init__.py
-    │   ├── extractor/
-    │   │   ├── __init__.py
-    │   │   └── docling_adapter.py     # DoclingAdapter implements ExtractorPort
-    │   ├── filter/
-    │   │   ├── __init__.py
-    │   │   └── heuristic_filter.py    # HeuristicFilter implements FilterPort
-    │   ├── chunker/
-    │   │   ├── __init__.py
-    │   │   └── markdown_chunker.py    # MarkdownChunker implements ChunkerPort
-    │   ├── enricher/
-    │   │   ├── __init__.py
-    │   │   └── metadata_enricher.py   # MetadataEnricher implements MetadataEnricherPort
-    │   └── http/
-    │       ├── __init__.py
-    │       ├── router.py              # APIRouter — FastAPI input adapter
-    │       └── schemas.py             # Pydantic request/response models
+    ├── composables/
+    │   ├── useUpload.ts    # Upload state machine (idle/dragging/uploading/result/error)
+    │   └── useDarkMode.ts  # Dark mode toggle with localStorage persistence
     │
-    └── main.py                    # Composition root: wires everything, creates FastAPI app
+    ├── types/
+    │   └── api.ts          # TypeScript types mirroring backend schemas
+    │
+    └── components/
+        ├── DropZone.vue        # Drag-and-drop target + click-to-browse
+        ├── UploadProgress.vue  # Progress/spinner shown during uploading state
+        ├── ResultView.vue      # Chunks list + metadata sidebar container
+        ├── ChunkCard.vue       # Single chunk with Markdown rendering
+        ├── MetadataSidebar.vue # Document-level metadata panel
+        ├── SkeletonLoader.vue  # Shimmer placeholder during processing
+        └── ErrorBanner.vue     # Structured error display
 ```
 
-### Structure Rationale
+**Rationale for flat component layout:** There is one user flow (drag → upload → inspect). Feature-based sub-directories add path depth without clarity at this scale. If a second feature (e.g., history, settings) is added in v2.1+, promote to `features/ingest/` at that point.
 
-- **domain/:** No framework imports allowed. `models.py` + `ports.py` are the only files other layers must import from. This constraint enforces the dependency rule.
-- **application/:** Imports only from `domain/`. The service receives port instances at construction time — it never imports a concrete adapter.
-- **adapters/:** Each subdirectory is one adapter family. Adding a new extractor backend means adding a file here; zero changes to domain or application layers.
-- **adapters/http/:** FastAPI is treated as infrastructure. Schemas here are never imported by the service — they exist only to translate HTTP concepts into domain calls and back.
-- **main.py as composition root:** The only file that imports both application and adapter layers simultaneously. This is where you instantiate `DoclingAdapter()`, pass it to `ExtractionService(extractor=...)`, and mount the router. In tests you substitute mock adapters here.
+### TypeScript Types (api.ts)
 
-## Architectural Patterns
+Mirror the backend schemas exactly. Do not add optional fields that the backend guarantees.
 
-### Pattern 1: Protocol as Port Definition
+```typescript
+// src/types/api.ts
 
-**What:** Define each port as a `typing.Protocol`. Adapters satisfy the port structurally — no inheritance required.
+export interface ChunkSchema {
+  chunk_id: string
+  content: string          // Markdown text
+  page_start: number
+  page_end: number
+  section_title: string
+  chunk_index: number
+  total_chunks: number
+  word_count: number
+}
 
-**When to use:** Always, for ports that external libraries implement or that you want third-party code to satisfy without subclassing.
+export interface MetadataSchema {
+  doc_id: string
+  source_filename: string
+  title: string
+  author: string
+  language: string         // ISO 639-1
+  doc_type: string
+  page_count: number
+  chunk_count: number
+  ingested_at: string      // ISO 8601, serialized by Pydantic
+}
 
-**Trade-offs:** Static type checkers (mypy, pyright) enforce correctness at check time; runtime `isinstance` checks require `@runtime_checkable` (checks only method presence, not signatures). ABCs give runtime enforcement of abstract methods — use ABC when you want a `TypeError` at instantiation time if someone forgets to implement a method.
+export interface ExtractionResponse {
+  metadata: MetadataSchema
+  chunks: ChunkSchema[]
+}
 
-**Recommendation:** Use `Protocol` for all four ports (ExtractorPort, FilterPort, ChunkerPort, MetadataEnricherPort). The `DoclingAdapter` never needs to inherit from `ExtractorPort` — it just needs to have the right method signatures. This is especially important for wrapping third-party libraries you cannot modify.
-
-**Example:**
-```python
-# src/selectionmaid/domain/ports.py
-from typing import Protocol
-from .models import RawDocument, DocumentChunk, ExtractionResult
-
-class ExtractorPort(Protocol):
-    def extract(self, data: bytes, mime_type: str) -> RawDocument: ...
-
-class FilterPort(Protocol):
-    def filter(self, document: RawDocument) -> RawDocument: ...
-
-class ChunkerPort(Protocol):
-    def chunk(self, document: RawDocument) -> list[DocumentChunk]: ...
-
-class MetadataEnricherPort(Protocol):
-    def enrich(self, chunk: DocumentChunk) -> DocumentChunk: ...
+export interface ApiError {
+  error: {
+    code: string
+    message: string
+  }
+}
 ```
 
-### Pattern 2: Frozen Dataclass Domain Models
+### API Layer (ingest.ts)
 
-**What:** All domain objects are `@dataclass(frozen=True, slots=True)`. No Pydantic, no ORM, no framework dependency in the domain layer.
+A thin, framework-agnostic fetch wrapper. No Axios — native `fetch` is sufficient and avoids a dependency for a single endpoint.
 
-**When to use:** Always for objects that cross layer boundaries (from adapter → service, from service → adapter).
+```typescript
+// src/api/ingest.ts
 
-**Trade-offs:** `frozen=True` makes objects hashable and prevents accidental mutation, catching a whole class of bugs. `slots=True` (Python 3.10+, available in 3.13) reduces memory overhead. Pydantic is *not* used in domain models to avoid coupling the domain to a validation framework — Pydantic is confined to `adapters/http/schemas.py`.
+const BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
-**Example:**
-```python
-# src/selectionmaid/domain/models.py
-from dataclasses import dataclass, field
-from typing import Any
+export class IngestApiError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly httpStatus: number
+  ) {
+    super(message)
+    this.name = 'IngestApiError'
+  }
+}
 
-@dataclass(frozen=True, slots=True)
-class DocumentMetadata:
-    source_filename: str
-    mime_type: str
-    language: str | None = None
-    title: str | None = None
-    author: str | None = None
-    detected_at: str | None = None        # ISO-8601 string; no datetime to avoid TZ complexity
-    extra: dict[str, Any] = field(default_factory=dict)
+export async function postIngest(
+  file: File,
+  signal?: AbortSignal
+): Promise<ExtractionResponse> {
+  const form = new FormData()
+  form.append('file', file)          // field name must match FastAPI param name: "file"
 
-@dataclass(frozen=True, slots=True)
-class RawDocument:
-    """Intermediate: extracted text before chunking."""
-    content_markdown: str                  # Docling exports to Markdown
-    metadata: DocumentMetadata
-    page_count: int | None = None
+  const response = await fetch(`${BASE_URL}/ingest`, {
+    method: 'POST',
+    body: form,
+    signal,
+    // DO NOT set Content-Type manually — browser sets multipart boundary automatically
+  })
 
-@dataclass(frozen=True, slots=True)
-class DocumentChunk:
-    chunk_id: str                          # deterministic: f"{source_filename}-{index}"
-    text: str
-    index: int                             # position within source document
-    token_count: int
-    heading_path: list[str]               # ["Section 1", "Subsection 1.2"] — breadcrumb
-    metadata: DocumentMetadata
+  if (!response.ok) {
+    const body = await response.json() as ApiError
+    throw new IngestApiError(
+      body.error.code,
+      body.error.message,
+      response.status
+    )
+  }
 
-@dataclass(frozen=True, slots=True)
-class ExtractionResult:
-    chunks: list[DocumentChunk]
-    source_metadata: DocumentMetadata
-    total_chunks: int
-    filtered_page_count: int | None = None
+  return response.json() as Promise<ExtractionResponse>
+}
 ```
 
-### Pattern 3: Composition Root / Manual DI via Constructor Injection
+**Critical:** Never manually set `Content-Type: multipart/form-data` when using `FormData`. The browser must set this header itself to include the correct boundary parameter. Setting it manually breaks the multipart parse on the server.
 
-**What:** The application service receives concrete adapter instances through its constructor. The composition root (`main.py`) is the only place that instantiates adapters and wires them together.
+### Upload State Machine (useUpload.ts)
 
-**When to use:** Always. No DI framework (dependency-injector, lagom, inject) is needed for a service with four well-known ports. The overhead of a DI container exceeds its value here.
+The upload flow has exactly five states. Model this as a discriminated union, not a bag of booleans.
 
-**Trade-offs:** Explicit, traceable, zero magic. Adapters are swapped by changing one line in `main.py`. In tests, you replace one argument with a mock.
-
-**Example:**
-```python
-# src/selectionmaid/application/extraction_service.py
-from ..domain.ports import ExtractorPort, FilterPort, ChunkerPort, MetadataEnricherPort
-from ..domain.models import ExtractionResult
-
-class ExtractionService:
-    def __init__(
-        self,
-        extractor: ExtractorPort,
-        filter_: FilterPort,
-        chunker: ChunkerPort,
-        enricher: MetadataEnricherPort,
-    ) -> None:
-        self._extractor = extractor
-        self._filter = filter_
-        self._chunker = chunker
-        self._enricher = enricher
-
-    def extract(self, data: bytes, mime_type: str, source_filename: str) -> ExtractionResult:
-        raw = self._extractor.extract(data, mime_type)
-        filtered = self._filter.filter(raw)
-        chunks = self._chunker.chunk(filtered)
-        enriched = [self._enricher.enrich(c) for c in chunks]
-        return ExtractionResult(
-            chunks=enriched,
-            source_metadata=raw.metadata,
-            total_chunks=len(enriched),
-        )
+```text
+idle ──drag-enter──► dragging ──drag-leave──► idle
+  │                     │
+  └──file-selected───► uploading ──success──► result
+  │                     │
+  │                     └──error──► error
+  │
+  └──reset──► idle  (from result or error)
 ```
 
+States:
+
+- `idle` — nothing happening; DropZone shows default prompt
+- `dragging` — file is hovering over drop zone; DropZone highlights
+- `uploading` — `fetch` in flight; SkeletonLoader visible
+- `result` — response received; ChunksView visible with stagger animation
+- `error` — fetch failed or API error; ErrorBanner visible
+
+```typescript
+// src/composables/useUpload.ts
+
+import { ref, readonly } from 'vue'
+import { postIngest, IngestApiError } from '@/api/ingest'
+import type { ExtractionResponse } from '@/types/api'
+
+type UploadState = 'idle' | 'dragging' | 'uploading' | 'result' | 'error'
+
+export function useUpload() {
+  const state = ref<UploadState>('idle')
+  const result = ref<ExtractionResponse | null>(null)
+  const error = ref<{ code: string; message: string } | null>(null)
+  let abortController: AbortController | null = null
+
+  function onDragEnter() {
+    if (state.value === 'idle') state.value = 'dragging'
+  }
+
+  function onDragLeave() {
+    if (state.value === 'dragging') state.value = 'idle'
+  }
+
+  async function upload(file: File) {
+    state.value = 'uploading'
+    result.value = null
+    error.value = null
+    abortController = new AbortController()
+
+    try {
+      result.value = await postIngest(file, abortController.signal)
+      state.value = 'result'
+    } catch (err) {
+      if (err instanceof IngestApiError) {
+        error.value = { code: err.code, message: err.message }
+      } else {
+        error.value = { code: 'NETWORK', message: 'Network error. Is the backend running?' }
+      }
+      state.value = 'error'
+    } finally {
+      abortController = null
+    }
+  }
+
+  function cancel() {
+    abortController?.abort()
+    state.value = 'idle'
+  }
+
+  function reset() {
+    state.value = 'idle'
+    result.value = null
+    error.value = null
+  }
+
+  return {
+    state: readonly(state),
+    result: readonly(result),
+    error: readonly(error),
+    onDragEnter,
+    onDragLeave,
+    upload,
+    cancel,
+    reset,
+  }
+}
+```
+
+**Why `readonly()`:** Expose refs as readonly to prevent external mutation of state — state transitions must go through the composable's actions, not direct assignment from components.
+
+### Frontend Component Responsibilities
+
+| Component | Input | Output | Role |
+| --- | --- | --- | --- |
+| `App.vue` | — | Layout shell | Provides dark mode class on `<html>`, places components |
+| `DropZone.vue` | `@dragenter`, `@dragleave`, `@drop`, `@change` | `emit('file', File)` | Captures file via drag-and-drop or click; delegates state to parent |
+| `UploadProgress.vue` | `state: UploadState` | — | Shows spinner/progress indicator during `uploading` state |
+| `SkeletonLoader.vue` | `count: number` | — | Renders N shimmer placeholder cards during `uploading` |
+| `ResultView.vue` | `result: ExtractionResponse` | — | Container for chunks list + metadata sidebar |
+| `ChunkCard.vue` | `chunk: ChunkSchema`, `index: number` | — | Renders single chunk: Markdown content + metadata badges |
+| `MetadataSidebar.vue` | `metadata: MetadataSchema` | — | Document-level metadata panel (language, type, page count, etc.) |
+| `ErrorBanner.vue` | `error: { code, message }` | `emit('retry')`, `emit('dismiss')` | Shows structured error with retry action |
+
+### Data Flow: Drag-to-Chunks
+
+```text
+User drags file onto DropZone.vue
+  │
+  ▼
+DropZone emits 'file' event with File object
+  │
+  ▼
+App.vue calls useUpload().upload(file)
+  │
+  ├── state transitions to 'uploading'
+  ├── SkeletonLoader renders (v-if state === 'uploading')
+  │
+  ▼
+fetch POST /ingest with FormData
+  │
+  ├── success:
+  │     state → 'result'
+  │     result.value = ExtractionResponse
+  │     ResultView renders (v-if state === 'result')
+  │     TransitionGroup staggers ChunkCard animations (CSS delay via index)
+  │
+  └── error:
+        state → 'error'
+        error.value = { code, message }
+        ErrorBanner renders (v-if state === 'error')
+        User can retry → reset() → state → 'idle'
+```
+
+### Stagger Animation Pattern
+
+Vue's built-in `<TransitionGroup>` handles stagger without GSAP dependency. CSS custom properties on each element carry the delay.
+
+```vue
+<!-- ResultView.vue -->
+<TransitionGroup name="chunk" tag="div">
+  <ChunkCard
+    v-for="(chunk, index) in result.chunks"
+    :key="chunk.chunk_id"
+    :chunk="chunk"
+    :style="{ '--delay': `${index * 60}ms` }"
+  />
+</TransitionGroup>
+```
+
+```css
+/* ChunkCard.vue <style scoped> */
+.chunk-enter-active {
+  transition: opacity 0.35s ease var(--delay), transform 0.35s ease var(--delay);
+}
+.chunk-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+```
+
+This pattern is pure CSS — no GSAP, no JavaScript animation hook. If more complex orchestration is needed (e.g., sequential reveal with scroll tracking), GSAP's stagger can be added via the TransitionGroup JavaScript hooks (`@enter`, `@leave`).
+
+### Shimmer Skeleton Pattern
+
+```vue
+<!-- SkeletonLoader.vue -->
+<template>
+  <div v-for="n in count" :key="n" class="skeleton-card" />
+</template>
+
+<style scoped>
+.skeleton-card {
+  height: 120px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-shimmer) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+</style>
+```
+
+CSS custom properties (`--skeleton-base`, `--skeleton-shimmer`) are set on `:root[data-theme="dark"]` and `:root` for light/dark switching without JavaScript.
+
+### Dark Mode Implementation
+
+Tailwind CSS v4 uses class-based dark mode when `darkMode: 'class'` (or in v4 syntax, `@variant dark (.dark &)`). Toggle by adding/removing the `dark` class on `<html>`.
+
+```typescript
+// src/composables/useDarkMode.ts
+import { ref, watch } from 'vue'
+
+export function useDarkMode() {
+  const isDark = ref(localStorage.getItem('theme') === 'dark')
+
+  function apply(dark: boolean) {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
+  }
+
+  // Apply on mount
+  apply(isDark.value)
+
+  watch(isDark, apply)
+
+  function toggle() {
+    isDark.value = !isDark.value
+  }
+
+  return { isDark, toggle }
+}
+```
+
+This composable is called once in `App.vue`. The `dark` class on `<html>` drives all Tailwind dark variant styles.
+
+### DropZone Implementation
+
+Use **VueUse `useDropZone`** rather than manual drag event handling. VueUse is the standard utility library for Vue 3 composables (200+ functions, actively maintained).
+
+```vue
+<!-- DropZone.vue -->
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useDropZone } from '@vueuse/core'
+
+const emit = defineEmits<{ file: [file: File] }>()
+
+const dropZoneRef = ref<HTMLDivElement>()
+
+const { isOverDropZone } = useDropZone(dropZoneRef, {
+  onDrop(files) {
+    if (files && files[0]) emit('file', files[0])
+  },
+  dataTypes: ['application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/html'],
+})
+
+function onClickBrowse() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.pdf,.docx,.html'
+  input.onchange = () => {
+    if (input.files?.[0]) emit('file', input.files[0])
+  }
+  input.click()
+}
+</script>
+```
+
+**Note on `dataTypes` filtering in VueUse:** MIME type filtering during dragover only works reliably in Chrome/Firefox. Safari reports an empty type list during drag. Accept any drop and let the backend's Layer 2 MIME check reject unsupported types with a clear error message.
+
+### Vite Configuration
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { fileURLToPath } from 'url'
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  server: {
+    port: 5173,
+    proxy: {
+      // Dev-only proxy: avoids CORS entirely during development
+      '/ingest': 'http://localhost:8000',
+      '/health': 'http://localhost:8000',
+    }
+  }
+})
+```
+
+**The dev proxy is an alternative to CORS during development**, not a replacement. The backend must still have CORS configured for production. Choose one of these strategies:
+
+- **Strategy A (recommended):** Use Vite dev proxy (`/ingest` → backend). No CORS needed in dev. Configure CORS on backend for production origin only.
+- **Strategy B:** Configure CORS on backend for both `localhost:5173` (dev) and production origin. No proxy needed.
+
+Strategy A is cleaner — CORS config only ever contains production origins, no localhost exceptions to remember.
+
+---
+
+## Part 3 — Backend Changes Required for v2.0
+
+### File: `src/selection_maid/adapters/http/app.py` (MODIFY)
+
+Add `CORSMiddleware` to the FastAPI app. This is the only backend change required for the frontend milestone.
+
 ```python
-# src/selectionmaid/main.py  — Composition Root
-from fastapi import FastAPI
-from .adapters.extractor.docling_adapter import DoclingAdapter
-from .adapters.filter.heuristic_filter import HeuristicFilter
-from .adapters.chunker.markdown_chunker import MarkdownChunker
-from .adapters.enricher.metadata_enricher import MetadataEnricher
-from .application.extraction_service import ExtractionService
-from .adapters.http.router import build_router
+from fastapi.middleware.cors import CORSMiddleware
 
 def create_app() -> FastAPI:
-    service = ExtractionService(
-        extractor=DoclingAdapter(),
-        filter_=HeuristicFilter(),
-        chunker=MarkdownChunker(max_tokens=512, overlap_tokens=64),
-        enricher=MetadataEnricher(),
+    app = FastAPI(
+        title="SelectionMaid",
+        # ... existing args
+        lifespan=_lifespan,
     )
-    app = FastAPI(title="SelectionMaid")
-    app.include_router(build_router(service))
+
+    # CORS: allow the SPA origin to call /ingest and /health
+    # Use explicit origins — never "*" in production
+    allowed_origins = [
+        "http://localhost:5173",           # Vite dev server
+        "http://localhost:4173",           # vite preview
+        # Add production SPA URL here: "https://selection-maid.your-domain.com"
+    ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=False,           # No cookies or Auth headers needed
+        allow_methods=["GET", "POST"],     # Only the methods the SPA uses
+        allow_headers=["*"],               # Content-Type set by browser for multipart
+    )
+
     return app
-
-app = create_app()
 ```
 
-### Pattern 4: FastAPI as Input Adapter — Router Factory
+**Why `allow_credentials=False`:** The SPA sends no cookies or `Authorization` headers. Keeping credentials disabled allows `allow_origins=["*"]` as a fallback if needed. With `allow_credentials=True`, wildcards are forbidden by the CORS spec and the browser will reject the preflight.
 
-**What:** The HTTP router does not instantiate the service itself. It receives a pre-built service instance and closes over it. This keeps the router ignorant of which concrete adapters are wired in.
+**Why explicit methods:** `allow_methods=["GET", "POST"]` rather than `["*"]`. The SPA only uses these two methods. Restrict the surface.
 
-**When to use:** Always with hexagonal FastAPI. Avoids the trap of using `Depends(get_service)` factory functions that re-instantiate adapters per request.
+**Where in the file:** `add_middleware` must be called before any route is registered. Call it inside `create_app()` before `return app`, after the FastAPI instance is created but before `_lifespan` wires the router. The lifespan wires routes on startup — that timing is correct because `add_middleware` applies at the ASGI layer regardless.
 
-**Trade-offs:** Simple and predictable. The router is a thin translation layer: HTTP request → domain call → HTTP response. No business logic leaks into route handlers. In tests, `app.dependency_overrides` is unused because there are no Depends-based factories to override — you simply call `create_app()` with mock service.
+**Configuring origins from environment:** For a real deployment, read origins from an environment variable rather than hardcoding:
 
-**Example:**
 ```python
-# src/selectionmaid/adapters/http/router.py
-from fastapi import APIRouter, UploadFile, HTTPException
-from ...application.extraction_service import ExtractionService
-from .schemas import ExtractionResponse
+import os
 
-def build_router(service: ExtractionService) -> APIRouter:
-    router = APIRouter(prefix="/v1")
-
-    @router.post("/extract", response_model=ExtractionResponse)
-    async def extract(file: UploadFile) -> ExtractionResponse:
-        data = await file.read()
-        mime = file.content_type or "application/octet-stream"
-        try:
-            result = service.extract(data, mime, file.filename or "unknown")
-        except ValueError as e:
-            raise HTTPException(status_code=422, detail=str(e))
-        return ExtractionResponse.from_domain(result)
-
-    return router
+cors_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
+allowed_origins = [o.strip() for o in cors_origins_raw.split(",")]
 ```
 
-### Pattern 5: DoclingAdapter — Wrapping a Third-Party Library
+### File: `src/selection_maid/config.py` (OPTIONALLY MODIFY)
 
-**What:** The adapter hides all Docling-specific concepts behind the `ExtractorPort` interface. `DoclingDocument`, pipeline options, format-specific config — all private to the adapter file.
+Add a `cors_allowed_origins: list[str]` field to `HttpConfig` if origins should be part of the config system rather than a raw env var.
 
-**When to use:** For any third-party library that should be swappable (Docling, pdfplumber, unstructured, etc.).
+---
 
-**Trade-offs:** The domain never sees Docling imports. Swapping to a different library requires only rewriting this one adapter. The adapter is the *only* file that changes when Docling's API changes.
+## Part 4 — Full System Data Flow (v2.0)
 
-**Example:**
-```python
-# src/selectionmaid/adapters/extractor/docling_adapter.py
-from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.datamodel.pipeline_options import PdfPipelineOptions
-from ...domain.models import RawDocument, DocumentMetadata
-import io
-
-class DoclingAdapter:
-    def __init__(self) -> None:
-        options = PdfPipelineOptions(do_ocr=True, do_table_structure=True)
-        self._converter = DocumentConverter(
-            format_options={"pdf": PdfFormatOption(pipeline_options=options)}
-        )
-
-    def extract(self, data: bytes, mime_type: str) -> RawDocument:
-        # Docling accepts file paths or streams — wrap bytes in BytesIO
-        result = self._converter.convert(io.BytesIO(data))
-        markdown = result.document.export_to_markdown()
-        page_count = getattr(result.document, "num_pages", None)
-        metadata = DocumentMetadata(
-            source_filename="unknown",   # caller patches this upstream
-            mime_type=mime_type,
-            page_count=page_count,
-        )
-        return RawDocument(content_markdown=markdown, metadata=metadata, page_count=page_count)
+```text
+User drops PDF on DropZone.vue
+         │
+         ▼
+DropZone emits 'file' (File object)
+         │
+         ▼
+App.vue calls useUpload().upload(file)
+         │
+         ├─ state → 'uploading'
+         ├─ SkeletonLoader renders N cards (guess: chunk_count unknown until response)
+         │
+         ▼
+fetch('POST /ingest', { body: FormData { file: File } })
+         │         [CORS preflight OPTIONS /ingest if cross-origin]
+         │         [FastAPI CORSMiddleware responds to OPTIONS]
+         │
+         ▼
+FastAPI /ingest handler
+  │ Layer 1: Content-Length check
+  │ Layer 2: MIME type check (content_type)
+  │ Layer 3: Magic bytes check
+  │ ExtractionService.process(RawInput)
+  │   → DoclingAdapter → HeuristicFilter → MarkdownChunker → MetadataEnricher
+  └─ ExtractionResponse JSON
+         │
+         ▼
+fetch response → result.value = ExtractionResponse
+         │
+         ├─ state → 'result'
+         │
+         ▼
+ResultView.vue renders:
+  ├─ MetadataSidebar (doc_id, title, language, doc_type, page_count, chunk_count)
+  └─ TransitionGroup of ChunkCard components
+       └─ CSS stagger: --delay = index * 60ms
+            └─ each card: opacity 0→1 + translateY 12px→0
 ```
 
-## Data Flow
+---
 
-### Request Flow
+## Part 5 — Build Order for Frontend Phases
 
-```
-HTTP POST /v1/extract (multipart/form-data)
-    │
-    ▼
-FastAPI router (adapters/http/router.py)
-    │  reads UploadFile → bytes + mime_type
-    │
-    ▼
-ExtractionService.extract(data, mime_type, filename)
-    │
-    ├─→ ExtractorPort.extract(data, mime_type)
-    │       └─→ DoclingAdapter → Docling DocumentConverter
-    │               └─→ RawDocument(content_markdown, metadata)
-    │
-    ├─→ FilterPort.filter(raw_document)
-    │       └─→ HeuristicFilter → strips headers/footers/page numbers
-    │               └─→ RawDocument (cleaned)
-    │
-    ├─→ ChunkerPort.chunk(filtered_document)
-    │       └─→ MarkdownChunker → splits at headings + token budget
-    │               └─→ list[DocumentChunk]
-    │
-    └─→ MetadataEnricherPort.enrich(chunk) × N
-            └─→ MetadataEnricher → adds language, inferred fields
-                    └─→ list[DocumentChunk] (enriched)
-                            └─→ ExtractionResult
-    │
-    ▼
-ExtractionResponse.from_domain(result)   ← Pydantic schema
-    │
-    ▼
-HTTP 200 JSON response
-```
+The frontend should be built in this order to minimize integration surprises:
 
-### Key Data Flows
+| Step | Phase Focus | Why This Order |
+| --- | --- | --- |
+| 1 | Backend CORS middleware | Unblocks all browser testing immediately; small change, zero risk |
+| 2 | Project scaffold + types + API layer | `types/api.ts` and `api/ingest.ts` have no UI dependencies; can be verified against a running backend before any Vue component exists |
+| 3 | `useUpload` composable | Pure logic; testable with Vitest without any DOM rendering |
+| 4 | `DropZone` + `UploadProgress` + `ErrorBanner` | Core upload interaction; get the upload working before building result display |
+| 5 | `SkeletonLoader` + loading state | Polish the waiting state before building result — avoids jarring flash to data |
+| 6 | `ChunkCard` + `MetadataSidebar` + `ResultView` | Result display depends on knowing the exact shape of ExtractionResponse, which is validated after steps 2-4 |
+| 7 | `TransitionGroup` stagger animation + dark mode | Animation is purely additive on top of working functionality; add last to avoid animation interfering with debugging |
 
-1. **Bytes in, Markdown out (extractor):** Raw file bytes enter DoclingAdapter; Markdown text exits as `RawDocument`. Docling's internal `DoclingDocument` is never exposed outside the adapter.
-2. **Markdown filtered (filter):** `RawDocument.content_markdown` is cleaned; the result is still a `RawDocument` with the same shape — the filter is a pure transformation.
-3. **Chunks created (chunker):** Markdown is split at heading boundaries. Each `DocumentChunk` carries its heading breadcrumb, token count, and index for stable deterministic IDs.
-4. **Metadata enriched (enricher):** Each chunk's `DocumentMetadata` is supplemented with inferred fields (language via langdetect, etc.). The enricher returns a new frozen chunk — no mutation.
-5. **HTTP response (serialization):** `ExtractionResult` is translated to `ExtractionResponse` (a Pydantic model) at the HTTP boundary. Domain models are never directly serialized to JSON.
+**Critical dependency:** Steps 4-7 all require a running backend with CORS configured (Step 1). Do not build UI components against a mocked response if the real backend is available — mock the `useUpload` state instead, not the API layer.
 
-## Build Order
+---
 
-Build in this dependency order — each layer depends only on what is built before it:
+## Part 6 — Architecture Anti-Patterns for the Frontend
 
-| Step | Build | Depends On | Why First |
-|------|-------|------------|-----------|
-| 1 | `domain/models.py` | Nothing | All other layers import from here |
-| 2 | `domain/ports.py` | `domain/models.py` | Ports reference model types; service and adapters depend on ports |
-| 3 | `application/extraction_service.py` | `domain/` | Can be written and tested with mock adapters before any real adapter exists |
-| 4 | Adapters (any order) | `domain/` | Each adapter satisfies a port independently; no cross-adapter deps |
-| 5 | `adapters/http/schemas.py` | `domain/models.py` | HTTP schemas translate domain models; router depends on schemas |
-| 6 | `adapters/http/router.py` | `application/`, `adapters/http/schemas.py` | Router needs service type annotation and response schema |
-| 7 | `main.py` | Everything | Composition root wires it all; only file that imports all layers |
+### Anti-Pattern 1: Using Pinia for Upload State
 
-**Critical path:** `models.py` → `ports.py` → `extraction_service.py` → any adapter → `router.py` → `main.py`
+**What goes wrong:** Defining a Pinia store for upload state when a composable suffices.
 
-If you need to validate the service logic early, build step 3 with a `StubExtractor` that returns a hardcoded `RawDocument`, and test the full pipeline end-to-end before touching Docling.
+**Why bad:** Pinia adds a global singleton. Upload state is scoped to the session and does not need to survive navigation or be shared across multiple components simultaneously. A composable called in `App.vue` provides the same singleton behavior without the global store.
 
-## Scaling Considerations
+**Instead:** Use `useUpload()` called once in `App.vue` and pass `state`, `result`, `error` as props or provide/inject. Add Pinia only if a second feature (e.g., upload history) needs cross-route state.
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 0-100 req/day (current) | Single-process uvicorn; synchronous Docling calls are fine; no queue needed |
-| 100-10k req/day | Add `asyncio.to_thread()` wrapper around Docling (it is CPU-bound, not async-native); `max_workers` uvicorn setting |
-| 10k+ req/day | Introduce a task queue (Celery + Redis or ARQ); extraction becomes async; HTTP adapter returns a job ID; polling/webhook endpoint added — this only changes `adapters/http/` and adds `adapters/queue/`, not the domain |
+### Anti-Pattern 2: Setting Content-Type for FormData Manually
 
-### Scaling Priorities
+**What goes wrong:** `headers: { 'Content-Type': 'multipart/form-data' }` in the fetch call.
 
-1. **First bottleneck:** Docling's OCR and layout model inference is CPU-heavy and synchronous. Running it in the main async loop will block the event loop. Wrap in `asyncio.to_thread()` before traffic matters.
-2. **Second bottleneck:** Memory per request scales with document size (Docling loads ML models once at startup, but intermediate representations can be large for dense PDFs). Profile before optimizing.
+**Why bad:** FormData requires a `boundary` parameter in the Content-Type header. Only the browser knows the boundary string it generated. Setting Content-Type manually overwrites the browser's auto-generated header and removes the boundary. FastAPI cannot parse the body.
 
-## Anti-Patterns
+**Instead:** Never set `Content-Type` when posting `FormData`. Let the browser handle it.
 
-### Anti-Pattern 1: Domain Models Importing Framework Types
+### Anti-Pattern 3: Using Boolean Flags for State
 
-**What people do:** Use Pydantic `BaseModel` as domain objects directly, or use SQLAlchemy models as the entity passed between layers.
+**What goes wrong:** `isLoading`, `isError`, `isDragging`, `hasResult` as separate booleans.
 
-**Why it's wrong:** Couples the domain to a framework. If you swap Pydantic v1 → v2 or add an ORM, domain logic breaks. Domain objects cannot be tested without installing the framework.
+**Why bad:** Illegal state combinations become possible (e.g., `isLoading: true, hasResult: true`). Template conditionals become complex chains of `v-if` with multiple flags. Adding a new state (e.g., `queued`) requires touching every conditional.
 
-**Do this instead:** Domain objects are plain `@dataclass(frozen=True)`. Pydantic schemas live only in `adapters/http/schemas.py` and have a `from_domain()` classmethod.
+**Instead:** Use the discriminated union state machine: one `state` ref with string literal type. Each UI section is `v-if="state === 'uploading'"`. Legal states are enforced by the type.
 
-### Anti-Pattern 2: Service Instantiating Its Own Adapters
+### Anti-Pattern 4: Rendering Markdown as Plain Text
 
-**What people do:** `DoclingAdapter()` called inside `ExtractionService.__init__` or as a default argument.
+**What goes wrong:** Displaying `chunk.content` directly in a `<p>` or `<pre>` without Markdown parsing.
 
-**Why it's wrong:** Couples the service to a concrete adapter. Tests must use real Docling; you cannot inject a mock without patching at import level.
+**Why bad:** The backend returns `content` as Markdown. Headings, bold text, tables, and code blocks render as raw syntax characters, making the result view unusable for inspection.
 
-**Do this instead:** Always inject adapters via the constructor. The service only holds protocol-typed references.
+**Instead:** Use `markdown-it` (via `vue3-markdown-it` or direct usage) to render `content` as HTML inside `ChunkCard`. Sanitize the output with DOMPurify if content comes from untrusted sources (for an internal dev tool, this is lower priority but good practice).
 
-### Anti-Pattern 3: Business Logic in Route Handlers
+### Anti-Pattern 5: Hardcoding the Backend URL
 
-**What people do:** Route handlers contain chunking logic, filtering conditions, or metadata inference directly.
+**What goes wrong:** `fetch('http://localhost:8000/ingest', ...)` in the component or composable.
 
-**Why it's wrong:** The pipeline logic becomes HTTP-specific and cannot be tested without launching a FastAPI app. Re-use from a CLI adapter becomes impossible.
+**Why bad:** Does not work in production without a code change and rebuild.
 
-**Do this instead:** Route handlers are 5-10 lines: read HTTP input → call service → serialize result → return response.
+**Instead:** Always use `import.meta.env.VITE_API_BASE_URL`. In development with the Vite proxy, set `VITE_API_BASE_URL=` (empty string) so fetch calls go to the same origin and the proxy handles routing. In production, set it to the real backend URL.
 
-### Anti-Pattern 4: Leaking Docling Types Across the Adapter Boundary
-
-**What people do:** Return `DoclingDocument` from the adapter, pass it to the service, import `docling` in `extraction_service.py`.
-
-**Why it's wrong:** The domain now depends on Docling. Swapping extractor requires changes in the service.
-
-**Do this instead:** The adapter converts `DoclingDocument` → `RawDocument` internally before returning. Only `RawDocument` exits the adapter.
-
-### Anti-Pattern 5: One Giant Adapter Doing Extraction + Filtering + Chunking
-
-**What people do:** Build a `DoclingPipelineAdapter` that does all four steps internally because "Docling already does some chunking."
-
-**Why it's wrong:** You lose independent replaceability. You cannot swap the chunking strategy without touching the extractor. Docling's internal chunking is not tuned for RAG token budgets.
-
-**Do this instead:** Keep the four ports separate even if the initial implementations are simple. The boundary pays off when you need to tune chunking independently of the extraction backend.
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Docling | Wrapped by `DoclingAdapter`; Docling's `DocumentConverter` initialized once in `__init__` | Docling loads ML models at startup; keep adapter as a singleton for performance |
-| langdetect / lingua | Wrapped by `MetadataEnricher`; no port-level dependency on specific library | lingua-py is faster and more accurate than langdetect for short text; either satisfies the port |
-| tiktoken / tokenizers | Used by `MarkdownChunker` for accurate token counting | Use `tiktoken` for OpenAI-compatible token counts; use simple `len(text.split())` × 1.3 as a fast approximation |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| HTTP adapter ↔ ExtractionService | Direct method call; `ExtractionService` is passed into router factory | Not async internally — wrap in `asyncio.to_thread()` if needed |
-| ExtractionService ↔ Ports | Protocol method calls; adapters injected at construction | Service holds protocol-typed references, not concrete types |
-| Domain models ↔ HTTP schemas | `ExtractionResponse.from_domain(result)` class method | One-way translation at the adapter boundary; domain models never serialized directly |
-| Adapters ↔ Domain | Adapters import from `domain/models.py` and `domain/ports.py` only | `domain/` is the only shared vocabulary; adapters never import each other |
+---
 
 ## Sources
 
-- AWS Prescriptive Guidance: [Structure a Python project in hexagonal architecture using AWS Lambda](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/structure-a-python-project-in-hexagonal-architecture-using-aws-lambda.html) — HIGH confidence
-- Python typing docs: [Protocols and structural subtyping](https://typing.python.org/en/latest/reference/protocols.html) — HIGH confidence
-- Python typing spec: [PEP 544 — Protocols: Structural subtyping](https://peps.python.org/pep-0544/) — HIGH confidence
-- Docling reference: [DocumentConverter API](https://docling-project.github.io/docling/reference/document_converter/) — HIGH confidence
+**Backend (v1.0, unchanged):**
+
 - FastAPI docs: [Testing Dependencies with Overrides](https://fastapi.tiangolo.com/advanced/testing-dependencies/) — HIGH confidence
-- Szymon Miks: [Hexagonal architecture in Python](https://blog.szymonmiks.pl/p/hexagonal-architecture-in-python/) — MEDIUM confidence
-- Zaur Nasibov: [Hexagonal architecture and Python - Part III: Composition root](https://www.zaurnasibov.com/posts/2022/12/31/hexarch_di_python_part_3.html) — MEDIUM confidence
-- DEV Community: [Hexagonal Architecture in Python — wiring, DI, application layer](https://dev.to/elpic/hexagonal-architecture-in-python-wiring-adapters-dependency-injection-and-the-application-layer-61l) — MEDIUM confidence
-- Stanza: [Protocols vs Abstract Base Classes](https://www.stanza.dev/courses/python-architecture/protocols/python-architecture-protocols-vs-abc) — MEDIUM confidence
-- GitHub: [marcosvs98/hexagonal-architecture-with-python (FastAPI example)](https://github.com/marcosvs98/hexagonal-architecture-with-python) — MEDIUM confidence
+- Python typing spec: [PEP 544 — Protocols: Structural subtyping](https://peps.python.org/pep-0544/) — HIGH confidence
+
+**Frontend (v2.0):**
+
+- FastAPI docs: [CORS (Cross-Origin Resource Sharing)](https://fastapi.tiangolo.com/tutorial/cors/) — HIGH confidence, fetched directly
+- Vue.js docs: [Composables](https://vuejs.org/guide/reusability/composables) — HIGH confidence, fetched directly
+- Vue.js docs: [TransitionGroup](https://vuejs.org/guide/built-ins/transition-group) — HIGH confidence
+- VueUse docs: [useDropZone](https://vueuse.org/core/usedropzone/) — HIGH confidence
+- Vite docs: [Env Variables and Modes](https://vite.dev/guide/env-and-mode) — HIGH confidence
+- Vite docs: [Server Options (proxy)](https://vite.dev/config/server-options) — HIGH confidence
+- Vue Router docs: [Different History modes](https://router.vuejs.org/guide/essentials/history-mode.html) — HIGH confidence
+- create-vue: [GitHub — vuejs/create-vue](https://github.com/vuejs/create-vue) — HIGH confidence
+- VueUse issue [#4085](https://github.com/vueuse/vueuse/issues/4085): useDropZone/useFileDialog API consistency note — MEDIUM confidence
+- Smashing Magazine: [Drag-and-Drop File Uploader with Vue.js 3](https://www.smashingmagazine.com/2022/03/drag-drop-file-uploader-vuejs-3/) — MEDIUM confidence
 
 ---
-*Architecture research for: SelectionMaid — document extraction / RAG ingestion service*
-*Researched: 2026-05-23*
+
+*Architecture research updated: 2026-05-25 for v2.0 frontend milestone*
+*Backend architecture unchanged from v1.0 (2026-05-23)*

@@ -1,335 +1,417 @@
-# Stack Research
+# Technology Stack — v2.0 Frontend (Vue 3 + Vite SPA)
 
-**Domain:** Python document extraction + normalization service for RAG ingestion pipelines
-**Researched:** 2026-05-23
-**Confidence:** HIGH (core stack) / MEDIUM (version-specific details cross-verified via PyPI + official docs)
+**Project:** SelectionMaid
+**Milestone:** v2.0 Frontend — Vue 3 + Vite SPA consuming the FastAPI /ingest endpoint
+**Researched:** 2026-05-25
+**Confidence:** HIGH (core stack) / MEDIUM (version-specific details from npm/WebSearch)
+
+---
+
+## Context
+
+The backend (Python 3.13+, FastAPI, hexagonal architecture) ships production-ready as v1.0.
+This document covers only the **net-new frontend stack** for the v2.0 milestone.
+The SPA is a separate static artifact that talks to the backend over HTTP (CORS).
+
+Target feature set:
+- Drag-and-drop file upload with animated feedback
+- Skeleton/shimmer loading states during backend processing
+- Chunk list reveal with stagger animation
+- Smooth view transitions between sections
+- Metadata visualization
+- Dark-mode-first, minimalist aesthetic
 
 ---
 
 ## Recommended Stack
 
-### Core Technologies
+### Core Build Tools
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Python | 3.13+ | Runtime | Constraint set by project; supported by Docling since v2.18.0; full support confirmed current |
-| Docling | >=2.95 (latest) | Primary document extraction engine | Best-in-class structural preservation (DocLayNet + TableFormer AI models); native multi-format support; first-class Markdown + JSON export; MIT licensed; now LF AI & Data Foundation incubating project |
-| FastAPI | >=0.115 | HTTP input adapter (Port) | Native async; UploadFile/SpooledTemporaryFile for streaming file upload; lifespan events for DocumentConverter singleton; OpenAPI auto-docs; de facto standard for Python ML/data APIs |
-| Pydantic | v2 (bundled with FastAPI >=0.100) | Response schema, input validation | Rust-backed core; 5-50x faster than v1; `response_model` enforces chunk+metadata output schema; `model_config` with `from_attributes=True` for domain object mapping |
-| uvicorn | >=0.30 | ASGI server | Standard ASGI runner for FastAPI; supports `--reload` in development |
-| python-multipart | >=0.0.9 | Multipart form data parsing | Required by FastAPI for `UploadFile`; installed as a transitive dependency but must be explicit |
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Vite | ^6.3 | Build tool and dev server | Native ESM, HMR under 50ms, official Vue plugin; Vite 6 is the current stable release (announced Nov 2024) |
+| @vitejs/plugin-vue | ^5.x | Vue 3 SFC support in Vite | Official plugin; required to process `.vue` files |
+| TypeScript | ^5.5 | Type safety | Fully supported in Vue 3 + Vite; `lang="ts"` in SFCs; zero config via `vue-ts` template |
 
-### Extraction Engine Details
+**Scaffold command:**
+```bash
+npm create vite@latest selection-maid-ui -- --template vue-ts
+```
 
-**Docling 2.x architecture:**
+---
 
-- `DocumentConverter` — main entry point; accepts `allowed_formats` and `format_options` dict
-- `PipelineOptions` — per-format pipeline configuration (OCR, image scale, table mode)
-- `FormatOption` — bundles pipeline class + options + backend per format
-- `DoclingDocument` — unified internal representation; exposes `export_to_markdown()`, `export_to_json()`, `export_to_html()`
-- `HybridChunker` — Docling's own tokenization-aware chunker; the correct choice for this project (see Chunking section)
+### Core Framework
 
-**Supported input formats (HIGH confidence — official docs):**
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Vue 3 | ^3.5 | UI framework | Constraint from milestone; Composition API, `<script setup>`, excellent TS integration |
+| Vue Router | ^5.0 | Client-side routing | Official Vue router; v5 merges unplugin-vue-router into core, no breaking changes from v4; use `createWebHistory` for clean URLs |
 
-| Format | Notes |
-|--------|-------|
-| PDF | Native text extraction via docling-parse; OCR for scanned |
-| DOCX | Full support; preserves heading structure |
-| PPTX | Supported |
-| XLSX | Supported |
-| HTML | Supported |
-| Images (PNG, TIFF, JPEG, BMP, WebP) | OCR pipeline |
-| LaTeX | Supported |
-| Plain text | Supported |
-| AsciiDoc | Supported |
-| Audio (WAV, MP3) / WebVTT | Via optional extras (out of scope for SelectionMaid v1) |
+Vue Router is included even for a single-page tool because view transitions between "upload zone" and "results" states benefit from router-level transition hooks (`<RouterView>` + `<Transition>`).
 
-**OCR engines available via `PipelineOptions`:**
+---
 
-| Engine | Class | Notes |
-|--------|-------|-------|
-| EasyOCR | `EasyOcrOptions` | Default if GPU available; multilingual |
-| Tesseract | `TesseractOcrOptions` | Best for CPU-only; auto language detection supported |
-| Tesseract CLI | `TesseractCliOcrOptions` | When Tesseract binary is in PATH |
-| RapidOCR | `RapidOcrOptions` | CPU (onnxruntime) or GPU (torch); fastest on CPU |
-| macOS OCR | `OcrMacOptions` | macOS only |
+### Styling System
 
-**Recommendation:** Use `TesseractOcrOptions` for CPU-only server deployments (matches the low-traffic on-demand constraint). RapidOCR if throughput matters later.
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Tailwind CSS | ^4.1 | Utility-first CSS | v4 ships as a Vite plugin (`@tailwindcss/vite`); no `tailwind.config.js` needed; CSS variable-based design tokens; 10x faster build than v3 |
+| @tailwindcss/vite | ^4.1 | Tailwind Vite integration | Official plugin for v4; replaces PostCSS config; zero config required |
 
-### Docling Markdown Export — Known Limitation
+**Dark mode strategy:** Use the `class` strategy (not `media`), controlled by `@vueuse/core`'s `useColorMode`. This allows a UI toggle that overrides OS preference. In Tailwind v4, set `@variant dark (&:where(.dark, .dark *))` in your CSS entry point to activate class-based dark mode.
 
-MEDIUM confidence — confirmed via GitHub issues:
+**Why not CSS-in-JS or styled-components?** Tailwind + CSS variables is the natural fit for shadcn-vue components. CSS-in-JS adds runtime overhead and complicates the dark mode token strategy.
 
-`export_to_markdown()` currently exports all headings as H2 (`##`) regardless of their original nesting depth. The Docling team plans to fix this using TOC information from docling-parse, but as of current versions it is an **open bug** (#1023). The `DoclingDocument` internal tree does preserve hierarchy; the serialization loses it.
+---
 
-**Workaround:** Walk the document tree programmatically via `DoclingDocument.body.children` to emit H1/H2/H3 correctly in a custom serializer, or accept H2-flat output as sufficient for embedding quality (retrieval is not sensitive to heading depth; LLMs parse flat Markdown well).
+### Component Library
 
-**Decision for SelectionMaid:** Accept H2-flat output initially. The hexagonal `ExporterPort` design means a custom serializer can be dropped in without touching the service core when upstream fixes this.
+**Recommendation: shadcn-vue**
 
-### Chunking
+shadcn-vue is the correct choice for this project. Rationale:
 
-**Use Docling's own `HybridChunker`. Do not use LangChain text splitters for this service.**
+- Components are copied into `src/components/ui/` — you own the code, zero bundle bloat
+- Built on Reka UI (headless, accessible primitives) for the complex interaction logic
+- Styled with Tailwind CSS + CSS variables for theming
+- Dark mode is a first-class citizen: the shadcn-vue dark mode guide targets the exact Vite setup used here
+- 50+ components including everything needed: Button, Card, Badge, Separator, Sheet/Dialog
+- `useColorMode` from `@vueuse/core` is the recommended toggle mechanism in official shadcn-vue docs
+- The copy-paste model means no dependency to update; components live alongside your code
+
+| Library | Version | Purpose | Notes |
+|---------|---------|---------|-------|
+| shadcn-vue | CLI (no npm install) | UI components | Components copied into src; uses Reka UI + Tailwind |
+| reka-ui | ^2.x (transitive) | Headless primitives | Installed by shadcn-vue; do not import directly |
+
+**Why not PrimeVue?** PrimeVue brings its own theming system that fights Tailwind. Its unstyled mode works but requires stripping all defaults; more config overhead than shadcn-vue for a minimal dark aesthetic.
+
+**Why not Headless UI Vue?** Headless UI is maintained by the Tailwind team but targets React first; Vue support lags and component coverage is narrower than Reka UI.
+
+**Why not Vuetify / Element Plus / Naive UI?** All ship with opinionated theming that conflicts with a from-scratch dark design. Customization overhead exceeds the cost of building components on shadcn-vue primitives.
+
+---
+
+### Animation Library
+
+**Recommendation: motion-v (Motion for Vue)**
+
+| Library | Version | Purpose | Why |
+|---------|---------|---------|-----|
+| motion-v | ^2.2 | All animations | Official Motion library for Vue 3; 5kb; GSAP-comparable capability; built by the Motion team |
+
+motion-v is the Vue-native package for Motion (formerly Motion One, now motion.dev). It provides:
+- `<motion.div>` component with declarative `animate`, `initial`, `exit` props
+- `stagger()` function for chunk reveal cascades — exactly the use case
+- `drag` prop for drag-to-dismiss and interactive drag gestures
+- `useAnimate()` composable for imperative control (shimmer sequencing)
+- Vue Transitions integration via `<AnimatePresence>` equivalent
+- Hardware-accelerated via WAAPI where possible; JS fallback for spring physics
+- Current npm version: 2.2.1 (verified April 2026)
+
+**Stagger pattern for chunk reveal:**
+```ts
+import { stagger, useAnimate } from 'motion-v'
+// or use variants with delayChildren + staggerChildren on the list container
+```
+
+**Why not GSAP?** GSAP's free tier is sufficient technically, but its license restricts use in SaaS/products without a commercial license. For an internal dev tool this is legally murky. motion-v is MIT-licensed, Vue-native, and covers all required animation primitives.
+
+**Why not @vueuse/motion?** @vueuse/motion (the vueuse ecosystem package) is a separate, older library. It provides physics-based animations via composables but lacks the `<AnimatePresence>`-style exit animation orchestration and the WAAPI acceleration layer that motion-v ships. motion-v is the more capable choice for complex sequences.
+
+**Why not native CSS transitions?** Pure CSS cannot do dynamic stagger on a variable-length list returned from an API, nor can it sequence enter/exit based on route changes. Use CSS transitions only for hover micro-interactions (button states) that don't need JS control.
+
+---
+
+### Drag-and-Drop File Upload
+
+**Recommendation: native HTML5 + @vueuse/core `useDropZone`**
+
+| Utility | Version | Purpose | Notes |
+|---------|---------|---------|-------|
+| @vueuse/core | ^14.3 | `useDropZone`, `useColorMode`, `useDark`, etc. | Already pulled in by shadcn-vue; use throughout |
+
+Do not install a dedicated drag-and-drop library. `useDropZone` from `@vueuse/core` provides everything needed:
+- `isOverDropZone` reactive boolean for visual feedback styling
+- `onDrop(files: File[])` callback with file list
+- `dataTypes` filter for restricting to `['application/pdf', ...]`
+
+Pair `useDropZone` with motion-v to animate the drop zone border, scale, and overlay entrance on hover.
+
+`@vueuse/core` v14 requires Vue 3.5+. It ships tree-shakeable; only the composables you import are bundled.
+
+---
+
+### State Management
+
+**Recommendation: plain composables for this scope — no Pinia**
+
+The SPA state is:
+1. `uploadFile: File | null` — selected file
+2. `isProcessing: boolean` — waiting for API
+3. `result: IngestResponse | null` — API response
+4. `error: string | null` — error message
+
+This is single-page, single-flow, linear state. A single `useIngestion()` composable encapsulates all of it. No cross-component shared state is needed; the results component and the upload component can be siblings under a single parent.
+
+Pinia adds devtools, plugin support, and persistence — valuable when multiple features share state across many components. For a single upload-process-display flow, Pinia is organizational overhead that signals complexity this tool does not have.
+
+**Add Pinia if:** A second major flow (e.g., history of processed documents, session storage of previous results) is added in a future milestone.
+
+---
+
+### HTTP Client
+
+**Recommendation: native `fetch` with a thin composable wrapper**
+
+Do not add axios or ofetch for this project.
 
 Rationale:
+- The SPA makes exactly **one API call**: `POST /ingest` with `multipart/form-data`
+- `fetch` handles multipart uploads natively via `FormData`
+- `fetch` throws on network errors; HTTP error codes require a manual check — but for a single endpoint this is one `if (!response.ok)` guard
+- axios weighs ~14kB gzip; ofetch is 2kB but still a dependency for one endpoint
 
-- `HybridChunker` is structure-aware: it starts from Docling's hierarchical chunker and applies tokenizer-aware split/merge passes
-- It preserves heading context in chunk metadata via `contextualize()` — essential for RAG retrieval quality
-- It avoids mid-sentence splits and mid-table splits by design
-- `merge_peers=True` (default) merges undersized consecutive chunks that share the same heading scope
-- `repeat_table_header=True` (default) repeats table headers when a table spans multiple chunks
-- LangChain's `RecursiveCharacterTextSplitter` is character-aware, not structure-aware — it would destroy the document hierarchy that Docling worked to extract
+The composable pattern:
+```ts
+// src/composables/useIngestion.ts
+export function useIngestion() {
+  const isProcessing = ref(false)
+  const result = ref<IngestResponse | null>(null)
+  const error = ref<string | null>(null)
 
-**HybridChunker instantiation:**
+  async function ingest(file: File) {
+    isProcessing.value = true
+    error.value = null
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch('/api/ingest', { method: 'POST', body: form })
+      if (!res.ok) throw new Error(`Server error: ${res.status}`)
+      result.value = await res.json()
+    } catch (e) {
+      error.value = (e as Error).message
+    } finally {
+      isProcessing.value = false
+    }
+  }
+
+  return { isProcessing, result, error, ingest }
+}
+```
+
+**Upload progress:** `fetch` does not expose upload progress natively. If a progress bar during upload is required, use `XMLHttpRequest` inside the composable (fires `progress` events). This is the only reason to deviate — and it is still not a reason to add axios.
+
+---
+
+### Dev Tooling
+
+| Tool | Version | Purpose | Notes |
+|------|---------|---------|-------|
+| ESLint | ^9.x | Linting | Use `@vue/eslint-config-typescript` flat config |
+| Prettier | ^3.x | Formatting | `prettier-plugin-tailwindcss` sorts class order automatically |
+| Vitest | ^2.x | Unit testing | Vite-native; same config as the build |
+| @vue/test-utils | ^2.x | Component testing | Mount components in Vitest |
+| vue-devtools (browser ext) | — | Debug | Vue 3 devtools for component inspection |
+
+---
+
+## FastAPI Backend Integration
+
+### CORS Configuration
+
+Add `CORSMiddleware` to the existing FastAPI app. The SPA runs on `http://localhost:5173` in dev (Vite default) and on a separate origin in production.
 
 ```python
-from docling.chunking import HybridChunker
+from fastapi.middleware.cors import CORSMiddleware
 
-# Default: uses internal tokenizer, sensible defaults
-chunker = HybridChunker()
-chunks = list(chunker.chunk(dl_doc=result.document))
-
-# With explicit HuggingFace tokenizer (optional, for token-budget control)
-from docling.chunking import HybridChunker
-from docling_core.transforms.chunker.tokenizer.huggingface import HuggingFaceTokenizer
-from transformers import AutoTokenizer
-
-chunker = HybridChunker(
-    tokenizer=HuggingFaceTokenizer(
-        tokenizer=AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2"),
-        max_tokens=256,
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],   # dev; replace with deployed SPA origin in prod
+    allow_methods=["POST", "OPTIONS"],          # only /ingest is called
+    allow_headers=["Content-Type"],
+    max_age=600,                                # cache preflight for 10 minutes
 )
 ```
 
-For SelectionMaid v1, the default instantiation is sufficient since chunk size configuration is a caller concern, not a service concern.
+`CORSMiddleware` must be added before any other middleware. In production, replace the hardcoded origin with an environment variable (`CORS_ALLOWED_ORIGINS`).
 
-### Supporting Libraries
+### Vite Dev Proxy (eliminates CORS in development)
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| python-multipart | >=0.0.9 | Multipart form parsing (UploadFile) | Always — required by FastAPI for file uploads |
-| uvicorn | >=0.30 | ASGI server | Run in production and dev |
-| pytest | >=8.0 | Test runner | All tests |
-| pytest-asyncio | >=0.23 | Async test support | Needed for `async def` endpoint tests |
-| httpx | >=0.27 | HTTP client for FastAPI TestClient | `AsyncClient` for async endpoint tests; `TestClient` for sync |
-| anyio | >=4.0 | Async I/O abstraction | Pulled in by FastAPI; needed for `pytest-asyncio` compatibility |
-| langdetect | >=1.0.9 | Language detection for metadata enrichment | Metadata enrichment phase; optional dependency |
+Configure Vite to proxy `/api` to the FastAPI server. This removes the need for CORS headers entirely during local development and mirrors the production path structure.
 
-### Development Tools
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| uv | Dependency management, venv, lockfile, Python version pinning | Replace pip entirely; `uv add`, `uv sync`, `uv run`; 10-100x faster than pip; handles torch CPU/GPU variants via `--extra-index-url` in `tool.uv` config |
-| ruff | Linting + formatting | Replaces black + isort + flake8; zero-config with pyproject.toml `[tool.ruff]` |
-| mypy | Static type checking | Use `strict = true` in `[tool.mypy]`; Docling and FastAPI are fully typed |
-| pytest-cov | Coverage reporting | `--cov=src --cov-report=term-missing` |
-
----
-
-## Installation
-
-```toml
-# pyproject.toml (uv-managed)
-[project]
-name = "selection-maid"
-requires-python = ">=3.13"
-dependencies = [
-    "docling>=2.95",
-    "fastapi>=0.115",
-    "uvicorn>=0.30",
-    "python-multipart>=0.0.9",
-    "pydantic>=2.7",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-asyncio>=0.23",
-    "httpx>=0.27",
-    "pytest-cov>=5.0",
-    "ruff>=0.4",
-    "mypy>=1.10",
-]
-
-[tool.uv]
-# For CPU-only servers, override torch to CPU wheel:
-# uv add --extra-index-url https://download.pytorch.org/whl/cpu torch
+```ts
+// vite.config.ts
+export default defineConfig({
+  plugins: [vue(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
+})
 ```
 
-```bash
-# Install core + dev deps
-uv sync --extra dev
+With this proxy, `fetch('/api/ingest', ...)` routes to `http://localhost:8000/ingest` during dev.
+In production, configure the reverse proxy (nginx / Caddy) to do the same rewrite.
 
-# CPU-only torch (avoids 2GB CUDA download on servers)
-uv add --extra-index-url https://download.pytorch.org/whl/cpu torch torchvision
+### Multipart Upload
 
-# Run tests
-uv run pytest
+The FastAPI endpoint already accepts `UploadFile`. The frontend sends `multipart/form-data` via `FormData`. Do not set a `Content-Type` header manually — `fetch` sets the boundary automatically when the body is `FormData`.
 
-# Run dev server
-uv run uvicorn selection_maid.api.app:app --reload
+**Never send** `Content-Type: multipart/form-data` manually; omitting the boundary makes the request malformed.
+
+### Expected API Contract
+
 ```
+POST /ingest
+Content-Type: multipart/form-data
 
-**Warning:** Docling's default install pulls the full CUDA-enabled PyTorch (~2GB). For CI and CPU-only deployments, always add `--extra-index-url https://download.pytorch.org/whl/cpu`. Docling also downloads AI models (DocLayNet layout model, TableFormer) on first run — pre-warm the cache in Docker builds with `python -c "from docling.document_converter import DocumentConverter; DocumentConverter()"`.
+file: <binary>
 
-**Modular install note:** From Docling v2.92.0, a `docling-slim` meta-package exists with minimal dependencies (~50MB). For SelectionMaid, use full `docling` (standard extras) since PDF + table recognition is core functionality.
-
----
-
-## FastAPI Patterns for This Service
-
-### DocumentConverter Singleton via Lifespan
-
-`DocumentConverter` initialization is expensive (model loading). Use the `lifespan` event to initialize once and store in `app.state`:
-
-```python
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from docling.document_converter import DocumentConverter
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    app.state.converter = DocumentConverter()
-    yield
-    # no cleanup needed for DocumentConverter
-
-app = FastAPI(lifespan=lifespan)
-```
-
-Access in endpoints via `Request.app.state.converter` or FastAPI `Depends`.
-
-### File Upload Pattern
-
-```python
-from fastapi import FastAPI, File, UploadFile, Request, HTTPException
-import tempfile, pathlib
-
-ALLOWED_MIME = {
-    "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "text/html", "image/png", "image/jpeg", "image/tiff",
+200 OK
+{
+  "chunks": [
+    { "text": "...", "metadata": { "heading": "...", "page": 1 } }
+  ],
+  "metadata": { "title": "...", "language": "...", "doc_type": "..." }
 }
-
-@app.post("/extract")
-async def extract(request: Request, file: UploadFile = File(...)):
-    if file.content_type not in ALLOWED_MIME:
-        raise HTTPException(status_code=415, detail=f"Unsupported media type: {file.content_type}")
-
-    # Write to named temp file — Docling needs a real path, not a file handle
-    suffix = pathlib.Path(file.filename).suffix
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(await file.read())
-        tmp_path = pathlib.Path(tmp.name)
-
-    try:
-        result = request.app.state.converter.convert(tmp_path)
-        # ... chunking, metadata, response
-    finally:
-        tmp_path.unlink(missing_ok=True)
 ```
 
-**Note:** Docling's `DocumentConverter.convert()` accepts a `Path` or URL string, not a file-like object. Writing to a named temp file is the correct pattern.
+Define a matching TypeScript interface in `src/types/api.ts` and use it in the composable.
+
+---
+
+## Skeleton Loading — Implementation Approach
+
+Do not install a skeleton loader library. A pure CSS shimmer component is trivial and integrates naturally with Tailwind dark mode tokens.
+
+```vue
+<!-- src/components/SkeletonChunk.vue -->
+<template>
+  <div class="rounded-lg bg-muted animate-pulse h-24 w-full" />
+</template>
+```
+
+For a shimmer gradient effect, add a single Tailwind custom animation in `globals.css`:
+```css
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, var(--muted) 25%, var(--muted-foreground/20) 50%, var(--muted) 75%);
+  background-size: 200%;
+  animation: shimmer 1.5s infinite;
+}
+```
+
+Using shadcn-vue's CSS variable tokens (`--muted`, `--muted-foreground`) makes this automatically dark-mode-aware without any `dark:` prefix.
 
 ---
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| Docling | unstructured-io | When strong OCR on complex layouts is the primary concern; unstructured has better OCR breadth but worse table accuracy and slower development velocity in 2024-2025 |
-| Docling | pypdfium2 / pdfplumber | When speed is critical and document structure is not needed (plain text extraction only); 10x faster but no layout understanding |
-| Docling | pymupdf4llm | When you need lightweight PDF-to-Markdown without AI model downloads; hits the sweet spot of speed + quality for simple/well-structured PDFs |
-| Docling | LlamaParse | When accuracy on highly complex PDFs outweighs cost concerns; LlamaParse is a cloud API (paid), not embeddable |
-| Docling HybridChunker | LangChain RecursiveCharacterTextSplitter | Never for this project; structure-blind splitter loses all hierarchy Docling extracted |
-| Docling HybridChunker | llama-index DoclingNodeParser | Viable alternative if llama-index is already in the dependency tree; functionally similar; adds ~100MB of llama-index deps for no gain in a standalone service |
-| uv | pip + pip-tools | If the environment enforces pip only; uv is the clear modern choice |
-| uv | Poetry | Poetry has slower resolver and larger install overhead; uv has subsumed most of Rye's functionality and is faster; Rye's author recommends migrating to uv |
-| FastAPI lifespan | @app.on_event("startup") | The `on_event` decorator is deprecated since FastAPI 0.95.0; use `lifespan` |
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Animation | motion-v | GSAP | GSAP requires commercial license for SaaS/product use; motion-v is MIT |
+| Animation | motion-v | @vueuse/motion | Less capable exit animation orchestration; no WAAPI acceleration |
+| Animation | motion-v | CSS-only | Cannot stagger dynamic lists or sequence route transitions with JS state |
+| Components | shadcn-vue | PrimeVue (unstyled) | More config overhead; theming system fights Tailwind |
+| Components | shadcn-vue | Headless UI | Vue support lags React; narrower component set than Reka UI |
+| Components | shadcn-vue | Vuetify / Element Plus | Opinionated theming conflicts with custom dark aesthetic |
+| State | composables | Pinia | Overkill for single linear flow; add if multi-flow state emerges |
+| HTTP | fetch | axios | 14kB dependency for one endpoint; not justified |
+| HTTP | fetch | ofetch | Still a dependency for one endpoint; native fetch is sufficient |
+| Drag-drop | @vueuse/core useDropZone | vue-dropzone | vue-dropzone is Vue 2 + unmaintained; native HTML5 is the correct approach |
+| Drag-drop | @vueuse/core useDropZone | react-dropzone port | Does not exist for Vue 3 |
+| Skeleton | custom CSS | vue-skeletor | Extra dependency for 10 lines of CSS; dark mode integration is trivial without it |
+| CSS | Tailwind v4 | Tailwind v3 | v4 is the current stable release; v3 is in maintenance mode |
 
 ---
 
-## What NOT to Use
+## Installation
+
+```bash
+# Scaffold
+npm create vite@latest selection-maid-ui -- --template vue-ts
+cd selection-maid-ui
+
+# Core runtime
+npm install vue-router@5 @vueuse/core motion-v
+
+# Tailwind v4 (Vite plugin — no tailwind.config.js needed)
+npm install -D tailwindcss @tailwindcss/vite
+
+# shadcn-vue CLI (run after Tailwind is configured)
+npx shadcn-vue@latest init
+
+# Add individual shadcn-vue components as needed
+npx shadcn-vue@latest add button card badge separator
+
+# Dev tooling
+npm install -D vitest @vue/test-utils @vitejs/plugin-vue prettier prettier-plugin-tailwindcss
+```
+
+---
+
+## What NOT to Add
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `@app.on_event("startup")` / `@app.on_event("shutdown")` | Deprecated since FastAPI 0.95.0; will be removed | `@asynccontextmanager` lifespan passed to `FastAPI(lifespan=...)` |
-| LangChain as a chunking dependency | Pulls 200+ transitive dependencies for a text splitter; RecursiveCharacterTextSplitter is structure-blind | Docling's own `HybridChunker` |
-| `pip install docling` on a CPU-only server without `--extra-index-url` | Downloads 2GB+ of CUDA-enabled PyTorch unnecessarily | `uv add --extra-index-url https://download.pytorch.org/whl/cpu torch` |
-| Reading `UploadFile` directly and passing to Docling | Docling's `convert()` requires a filesystem path, not a file handle | Write to `tempfile.NamedTemporaryFile`, pass the path, delete after |
-| Celery / RQ for job queues | Out of scope for v1; low-traffic on-demand model doesn't require it | Synchronous FastAPI handler is sufficient |
-| `file.read()` for large files without size validation | Can exhaust server memory | Enforce `Content-Length` limit at the ASGI level or with a middleware check; for v1 and on-demand traffic, a per-request 50MB cap is sufficient |
-| Poetry | Slower resolver, heavier toolchain; being displaced by uv in the Python ecosystem | uv |
-| Rye | Rye's author is converging Rye into uv; new projects should start with uv directly | uv |
+| axios | 14kB for one endpoint; multipart upload works natively with `fetch` + `FormData` | native `fetch` |
+| Pinia | Linear single-flow state; composable is sufficient | `useIngestion()` composable |
+| LangChain / LlamaIndex on frontend | No text processing on the client; backend handles all of this | N/A |
+| vue-dropzone | Vue 2 + unmaintained | `@vueuse/core` `useDropZone` |
+| A skeleton loader library | 10 lines of CSS; Tailwind shimmer with CSS variables is dark-mode-aware | Custom `SkeletonChunk.vue` |
+| GSAP | License ambiguity for internal tools shipped as products | motion-v (MIT) |
+| @vueuse/motion | Less capable than motion-v for this use case | motion-v |
+| Vuetify / Quasar / Element Plus | Opinionated theming fights the minimal dark aesthetic | shadcn-vue on Reka UI |
+| Nuxt | SSR overhead for a static SPA backed by a separate FastAPI service | Vite + Vue Router |
+| react-* anything | Wrong ecosystem | Vue 3 equivalents |
 
 ---
 
-## Testing Patterns for Document Processing
+## Version Summary
 
-```python
-# conftest.py
-import pytest
-from fastapi.testclient import TestClient
-from selection_maid.api.app import app
-
-@pytest.fixture(scope="session")
-def client():
-    # session-scoped to avoid re-initializing DocumentConverter per test
-    with TestClient(app) as c:
-        yield c
-
-@pytest.fixture
-def sample_pdf(tmp_path) -> Path:
-    """Minimal valid PDF for unit tests — avoids network or model calls in fast tests."""
-    # Use a real small fixture PDF committed to tests/fixtures/
-    return Path("tests/fixtures/minimal.pdf")
-
-# For async endpoint tests
-import httpx, pytest_asyncio
-from asgi_lifespan import LifespanManager
-
-@pytest_asyncio.fixture
-async def async_client():
-    async with LifespanManager(app):
-        async with httpx.AsyncClient(app=app, base_url="http://test") as ac:
-            yield ac
-```
-
-**Pattern for pipeline tests:**
-- Use `scope="session"` fixtures for `DocumentConverter` — model loading is expensive
-- Use `tmp_path` for output files; `tmp_path_factory` for session-scoped temp dirs
-- Mock the `ExtractionPort` adapter in unit tests; only hit real Docling in integration tests
-- Keep a `tests/fixtures/` directory with minimal real files (minimal PDF ~10KB, simple DOCX) to avoid generating test documents programmatically
-
----
-
-## Version Compatibility Matrix
-
-| Package | Version | Python | Notes |
-|---------|---------|--------|-------|
-| docling | >=2.95 | >=3.10 (3.13 supported since 2.18.0) | Python 3.14 supported from 2.59.0 |
-| fastapi | >=0.115 | >=3.8 | Pydantic v2 is default since 0.100 |
-| pydantic | v2.x | >=3.8 | v1 compatibility shim available but avoid it |
-| uvicorn | >=0.30 | >=3.8 | |
-| pytest-asyncio | >=0.23 | >=3.8 | `asyncio_mode = "auto"` in pyproject.toml recommended |
-| torch | >=2.2.2 | >=3.8 | Docling requires torch >=2.2.2,<3.0.0 |
+| Package | Verified Version | Source |
+|---------|-----------------|--------|
+| Vite | ^6.3 | MEDIUM — announced Nov 2024, v6.x current |
+| @vitejs/plugin-vue | ^5.x | MEDIUM — matches Vite 6 release |
+| Vue 3 | ^3.5 | HIGH — required by @vueuse/core v14 |
+| Vue Router | ^5.0 (or 4.6.x) | MEDIUM — v5 published, v4.6.3 stable alt |
+| Tailwind CSS | ^4.1 | MEDIUM — v4 is current stable |
+| @tailwindcss/vite | ^4.1 | MEDIUM — official Vite plugin for Tailwind v4 |
+| motion-v | ^2.2 | MEDIUM — 2.2.1 verified via npm (Apr 2026) |
+| @vueuse/core | ^14.3 | HIGH — 14.3.0 verified via npm |
+| shadcn-vue | CLI (no version pin) | MEDIUM — components copied, not installed |
+| reka-ui | ^2.x (transitive) | MEDIUM — shadcn-vue dependency |
 
 ---
 
 ## Sources
 
-- [Docling GitHub — docling-project/docling](https://github.com/docling-project/docling) — main repo, confirmed version and Python requirements
-- [Docling PyPI page](https://pypi.org/project/docling/) — confirmed latest version 2.95.0, Python 3.13 support
-- [Docling Supported Formats](https://docling-project.github.io/docling/usage/supported_formats/) — format list HIGH confidence
-- [Docling HybridChunker docs](https://docling-project.github.io/docling/examples/hybrid_chunking/) — chunking API, `merge_peers`, `repeat_table_header`
-- [Docling Pipeline Options](https://docling-project.github.io/docling/reference/pipeline_options/) — OCR engine options confirmed
-- [Docling GitHub Issue #1023 — H2-only headings](https://github.com/docling-project/docling/issues/1023) — MEDIUM confidence, open bug
-- [FastAPI Lifespan docs](https://fastapi.tiangolo.com/advanced/testing-events/) — lifespan pattern confirmed
-- [FastAPI UploadFile reference](https://fastapi.tiangolo.com/reference/uploadfile/) — SpooledTemporaryFile behavior confirmed
-- [uv documentation](https://docs.astral.sh/uv/concepts/projects/dependencies/) — dependency management patterns
-- [PDF extraction benchmark — Procycons](https://procycons.com/en/blogs/pdf-data-extraction-benchmark/) — Docling vs alternatives accuracy
-- [Docling RAG + LangChain example](https://docling-project.github.io/docling/examples/rag_langchain/) — DoclingLoader modes, HybridChunker integration
-- [Reducing Docling Docker image size — Shekhar Gulati](https://shekhargulati.com/2025/02/05/reducing-size-of-docling-pytorch-docker-image/) — CPU-only torch install pattern
+- [Motion for Vue — motion.dev/docs/vue](https://motion.dev/docs/vue) — motion-v features, stagger, drag
+- [motion-v on npm](https://www.npmjs.com/package/motion-v) — version 2.2.1 confirmed
+- [Motion for Vue stagger docs](https://motion.dev/docs/stagger)
+- [motion-v GitHub — motiondivision/motion-vue](https://github.com/motiondivision/motion-vue)
+- [@vueuse/core on npm](https://www.npmjs.com/package/@vueuse/core) — version 14.3.0 confirmed; requires Vue 3.5+
+- [useDropZone — VueUse](https://vueuse.org/core/usedropzone/)
+- [shadcn-vue GitHub — unovue/shadcn-vue](https://github.com/unovue/shadcn-vue)
+- [shadcn-vue Dark Mode — Vite setup](https://www.shadcn-vue.com/docs/dark-mode)
+- [Reka UI](https://reka-ui.com/) — headless accessible primitives, Tailwind compatible
+- [Tailwind CSS v4 dark mode](https://tailwindcss.com/docs/dark-mode)
+- [Vite 6.0 announcement](https://vite.dev/blog/announcing-vite6)
+- [Vue Router on npm](https://www.npmjs.com/package/vue-router) — v5.0.7 latest
+- [Pinia on npm](https://www.npmjs.com/package/pinia) — v3.0.4; not recommended for this scope
+- [Vue 3 state management — Composables vs Pinia](https://vueschool.io/articles/vuejs-tutorials/composables-vs-provide-inject-pinia-when-to-use-what/)
+- [FastAPI CORS docs](https://fastapi.tiangolo.com/tutorial/cors/)
+- [Best Vue UI Libraries 2025 — Can Akyuz](https://www.canakyuz.dev/blog/the-best-react-and-vue-ui-libraries-of-2025-an-in-depth-review)
 
 ---
 
-*Stack research for: Python document extraction service (SelectionMaid) — RAG ingestion layer*
-*Researched: 2026-05-23*
+*Stack research for: Vue 3 + Vite SPA frontend — SelectionMaid v2.0 milestone*
+*Researched: 2026-05-25*
