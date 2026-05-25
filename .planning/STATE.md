@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Phase 7 context gathered
-last_updated: "2026-05-25T00:49:11.485Z"
-last_activity: 2026-05-25 -- Phase 07 marked complete
+milestone: v2.0
+milestone_name: extended-capabilities
+status: active
+last_updated: "2026-05-25T01:05:00Z"
+last_activity: 2026-05-25 -- Milestone v1.0 archived, transitioning to v2.0
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 26
-  completed_plans: 26
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,76 +20,47 @@ progress:
 See: .planning/PROJECT.md
 
 **Core value:** Documentos entram em qualquer formato suportado, chunks Markdown normalizados saem via interface estável — independente da biblioteca de extração ou protocolo de entrada usados.
-**Current focus:** Phase 07 — integration-hardening
+**Current focus:** v2.0 Initialization (OCR, Extended Formats, Observability)
 
 ## Current Position
 
-Phase: 07 — COMPLETE
-Plan: 3 of 3
-Status: Phase 07 complete
-Last activity: 2026-05-25 -- Phase 07 marked complete
+Phase: N/A
+Plan: N/A
+Status: Shipped v1.0; preparing v2.0
+Last activity: 2026-05-25 -- Milestone v1.0 archived
 
-Progress: [██████████] 100%
+Progress: [          ] 0%
 
-## Performance Metrics
+## Performance Metrics (v1.0 Lifecycle)
 
-**Velocity:**
-
-- Total plans completed: 13
-- Average duration: -
-- Total execution time: 0 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1 | 5 | - | - |
-| 2 | 5 | - | - |
-| 3 | 3 | - | - |
-
-**Recent Trend:**
-
-- Last 5 plans: -
-- Trend: -
-
-*Updated after each plan completion*
-| Phase 05 P01 | 5 | 3 tasks | 7 files |
-| Phase 05 P02 | 15 minutes | 3 tasks | 2 files |
-| Phase 05 P03 | 151 | 3 tasks | 1 files |
+- Total phases: 7
+- Total plans: 26
+- Total commits: 139
+- Total tests: 204 (100% pass)
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- Arquitetura hexagonal como constraint de design — troca de biblioteca não exige mudança global
-- Docling como ExtractorPort inicial — suporte nativo multi-formato + exportação Markdown de qualidade
-- FastAPI como InputPort inicial — adequado para volume on-demand
-- Ordem de build: domínio → DoclingAdapter → filtro → chunker → enricher → HTTP → hardening
-- HeuristicFilter (Phase 3): detecção de headers/footers por frequência, remoção de números de página e compressão de whitespace via stdlib (D-31..D-37)
-- Centralized config (Phase 3): uso de config.toml e tomllib (D-38..D-40)
-- [Phase ?]: Use mock patch for langdetect threshold test — real 'hi' input gets classified as Swahili (sw) not und
+- Architecture remains Hexagonal (Ports & Adapters).
+- Docling is the primary extraction engine.
+- Markdown is the normalized output format.
 
 ### Pending Todos
 
-None yet.
+- Initialize v2.0 requirements and roadmap.
 
 ### Blockers/Concerns
 
-- [Research] Memory leak Docling: acúmulo 10–13GB RSS em conversões repetidas — Phase 2 deve implementar refresh strategy e medir empiricamente
-- [Research] Event loop blocking: Docling é CPU-bound — Phase 6 deve usar run_in_threadpool e verificar com concurrency test
-- [Research] Bug heading H2 (issue #1023): export_to_markdown() achata headings para H2 — aceitar output flat no v1; ExporterPort boundary permite fix drop-in
+- None.
 
-## Deferred Items
+## Deferred Items (v1.0 -> v2.0)
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| *(none)* | | | |
+| Formats | OCR support | Planned for v2.0 | v1.0 |
+| Formats | PPTX/XLSX support | Planned for v2.0 | v1.0 |
+| Chunking | Configurable max_tokens per request | Planned for v2.0 | v1.0 |
 
-## Session Continuity
-
-Last session: 2026-05-25T00:00:27.858Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-integration-hardening/07-CONTEXT.md
+---
+*Last updated: 2026-05-25*
