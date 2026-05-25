@@ -285,6 +285,52 @@ class TestAdversarialInputs:
         assert "code" in body["error"]
 
     @pytest.mark.asyncio
+    async def test_valid_docx_returns_200(self, real_app: FastAPI) -> None:
+        """A valid DOCX file processed by real Docling returns HTTP 200."""
+        docx_bytes = _fixture_or_skip(FIXTURES_DIR / "sample.docx")
+        transport = httpx.ASGITransport(app=real_app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/ingest",
+                files={
+                    "file": (
+                        "sample.docx",
+                        docx_bytes,
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                },
+            )
+        assert response.status_code == 200
+        body = response.json()
+        assert "metadata" in body
+        assert "chunks" in body
+
+    @pytest.mark.asyncio
+    async def test_valid_html_returns_200(self, real_app: FastAPI) -> None:
+        """A valid HTML file processed by real Docling returns HTTP 200."""
+        html_bytes = _fixture_or_skip(FIXTURES_DIR / "sample.html")
+        transport = httpx.ASGITransport(app=real_app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/ingest",
+                files={
+                    "file": (
+                        "sample.html",
+                        html_bytes,
+                        "text/html",
+                    )
+                },
+            )
+        assert response.status_code == 200
+        body = response.json()
+        assert "metadata" in body
+        assert "chunks" in body
+
+    @pytest.mark.asyncio
     async def test_large_pdf_within_size_limit(self, real_app: FastAPI) -> None:
         """A ~40MB PDF (below the 50MB limit) is accepted and processed.
 
