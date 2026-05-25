@@ -53,6 +53,13 @@ _MIME_TO_EXT: dict[str, str] = {
     "text/html": ".html",
 }
 
+_MAGIC_MIME_ALIASES: dict[str, str] = {
+    # XHTML is valid HTML-family content for v1 HTML ingestion. libmagic reports
+    # W3C-style XHTML fixtures as application/xhtml+xml even when clients upload
+    # them under the configured text/html MIME type.
+    "application/xhtml+xml": "text/html",
+}
+
 #: Mapping used by _error_response() to look up HTTP status from error code.
 #: Re-exported here for backward compatibility (tests importing from router.py).
 _ERROR_CODE_TO_HTTP = ERROR_CODE_TO_HTTP
@@ -184,9 +191,12 @@ def build_router(service: ExtractionService, config: GlobalConfig) -> APIRouter:
         await file.seek(0)
 
         detected_mime: str = magic.from_buffer(header_bytes, mime=True)
-        # Normalize: libmagic may return "text/x-c" or similar for plain text
-        # content. We do an exact match against the declared MIME type.
-        if detected_mime != declared_mime:
+        normalized_detected_mime = _MAGIC_MIME_ALIASES.get(
+            detected_mime, detected_mime
+        )
+        # Normalize only explicitly accepted MIME aliases, then compare exactly
+        # against the declared MIME type.
+        if normalized_detected_mime != declared_mime:
             return _error_response(
                 "UPLOAD-002",
                 f"Magic bytes indicate MIME type '{detected_mime}' but "
