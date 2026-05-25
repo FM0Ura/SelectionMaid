@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Content Filtering** - HeuristicFilter para headers/footers, números de página e whitespace excessivo (completed 2026-05-24)
 - [x] **Phase 4: Chunking** - MarkdownChunker com split por heading e fallback fixed-size com token budget (completed 2026-05-24)
 - [x] **Phase 5: Metadata Enrichment** - MetadataEnricher com detecção de idioma, inferência de doc_type e campos completos (completed 2026-05-24)
-- [ ] **Phase 6: HTTP API Layer** - Router FastAPI como adaptador de entrada, validação de arquivo, run_in_threadpool
+- [x] **Phase 6: HTTP API Layer** - Router FastAPI como adaptador de entrada, validação de arquivo, run_in_threadpool (completed 2026-05-24)
 - [ ] **Phase 7: Integration Hardening** - Fixtures reais multi-formato, regressão de memória, teste de concorrência
 
 ## Phase Details
@@ -189,12 +189,10 @@ Plans:
 
 Plans:
 
-- [ ] 06-01-PLAN.md — Pydantic schemas for Request/Response (API-01, API-02)
-- [ ] 06-02-PLAN.md — Router factory and basic endpoints with app lifespan (API-01, API-02, ARCH-05)
-- [ ] 06-03-PLAN.md — 3-layer file validation and configuration (API-03)
-- [ ] 06-04-PLAN.md — run_in_threadpool integration and full API integration tests (API-01, API-02, API-03)
-
-**UI hint**: yes
+- [x] 06-01-PLAN.md — Pydantic schemas for Request/Response (API-01, API-02)
+- [x] 06-02-PLAN.md — Router factory and basic endpoints with app lifespan (API-01, API-02, ARCH-05)
+- [x] 06-03-PLAN.md — 3-layer file validation and configuration (API-03)
+- [x] 06-04-PLAN.md — run_in_threadpool integration and full API integration tests (API-01, API-02, API-03)
 
 ### Phase 7: Integration Hardening
 
@@ -205,17 +203,19 @@ Plans:
 
   1. Pipeline completo processa um PDF digital, um DOCX com tabelas e um HTML em sequência e retorna `ExtractionResponse` válido para cada um
   2. RSS do processo após 20 conversões consecutivas não excede 2× o RSS após a primeira conversão (sem memory leak)
-  3. Dois requests simultâneos a `POST /ingest` completam sem erro e sem deadlock em tempo aceitável
+  3. Cinco requests simultâneos a `POST /ingest` completam sem erro e sem deadlock em tempo aceitável
   4. Envio de PDF corrompido, PDF vazio e arquivo com extensão falsificada retornam erros HTTP com mensagem estruturada — o servidor não crasha
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 
-- [ ] 07-01: Fixtures reais: PDF digital, DOCX com tabelas, HTML, PDF corrompido, PDF vazio
-- [ ] 07-02: Teste de regressão de memória (20 conversões, verificar RSS)
-- [ ] 07-03: Teste de concorrência (2 requests simultâneos, sem deadlock)
-- [ ] 07-04: Teste de resiliência com arquivos inválidos e edge cases
+**Wave 1**
+- [ ] 07-01-PLAN.md — Adversarial fixtures generation and Adapter/Router hardening (D-91, D-93, D-98)
+
+**Wave 2**
+- [ ] 07-02-PLAN.md — E2E Integration and Concurrency stress testing (D-92, D-95, D-97)
+- [ ] 07-03-PLAN.md — Memory regression audit (20 consecutive conversions) (D-94)
 
 ## Progress
 
@@ -229,5 +229,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Content Filtering | 3/3 | Complete | 2026-05-24 |
 | 4. Chunking | 3/3 | Complete | 2026-05-24 |
 | 5. Metadata Enrichment | 3/3 | Complete   | 2026-05-24 |
-| 6. HTTP API Layer | 0/4 | Not started | - |
-| 7. Integration Hardening | 0/4 | Not started | - |
+| 6. HTTP API Layer | 4/4 | Complete | 2026-05-24 |
+| 7. Integration Hardening | 0/3 | Not started | - |
