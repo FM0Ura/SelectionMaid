@@ -13,11 +13,15 @@ Decision references:
   D-28: Content from result.document.export_to_markdown().
   D-29: page_count=0 for HTML; len(result.document.pages) for PDF/DOCX.
   D-30: UnsupportedFormatError raised before Docling call.
+  D-31: threading.Lock serializes access to non-thread-safe Docling components.
+  D-32: gc.collect() called after each extraction to mitigate memory growth.
 """
 
 from __future__ import annotations
 
 import concurrent.futures
+import gc
+import threading
 from typing import TYPE_CHECKING, Any
 
 from selection_maid.domain.models import RawDocument, RawInput
@@ -79,6 +83,9 @@ class DoclingAdapter:
         """
         self._converter = converter
         self._timeout_seconds = timeout_seconds
+        # D-31: serialize concurrent access to the Docling DocumentConverter,
+        # which is not thread-safe (model state is mutated during conversion).
+        self._lock = threading.Lock()
 
     def extract(self, document: RawInput) -> RawDocument:
         """Extract content from a document file and return structured Markdown.
@@ -104,30 +111,50 @@ class DoclingAdapter:
                 format=document.mime_type,
             )
 
-        # D-24: wrap the blocking converter.convert() in a thread so we can
-        # apply a timeout without blocking the calling thread indefinitely.
-        # A fresh executor per call is used (Pitfall 5 -- module-level executor
-        # with shutdown(wait=False) on timeout leaves threads orphaned permanently).
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(self._converter.convert, document.path)
+        # D-31: acquire lock before entering the ThreadPoolExecutor so only one
+        # extraction runs at a time. Docling's DocumentConverter mutates internal
+        # model state and is not safe for concurrent use.
+        result: Any = None
+        with self._lock:
             try:
-                result = future.result(timeout=self._timeout_seconds)
-            except concurrent.futures.TimeoutError as exc:
-                # D-24: translate timeout to domain error before the generic handler
-                raise ExtractionTimeoutError(
-                    f"Conversion exceeded {self._timeout_seconds}s timeout",
-                    cause=exc,
-                ) from exc
-            except SelectionMaidError:
-                # Let domain errors pass through unchanged (D-16 pattern)
-                raise
-            except Exception as exc:
-                raise ExtractionError(
-                    f"Docling conversion failed: {exc}",
-                    cause=exc,
-                ) from exc
+                # D-24: wrap the blocking converter.convert() in a thread so we can
+                # apply a timeout without blocking the calling thread indefinitely.
+                # A fresh executor per call is used (Pitfall 5 -- module-level executor
+                # with shutdown(wait=False) on timeout leaves threads orphaned permanently).
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(self._converter.convert, document.path)
+                    try:
+                        result = future.result(timeout=self._timeout_seconds)
+                    except concurrent.futures.TimeoutError as exc:
+                        # D-24: translate timeout to domain error before the generic handler
+                        raise ExtractionTimeoutError(
+                            f"Conversion exceeded {self._timeout_seconds}s timeout",
+                            cause=exc,
+                        ) from exc
+                    except SelectionMaidError:
+                        # Let domain errors pass through unchanged (D-16 pattern)
+                        raise
+                    except Exception as exc:
+                        raise ExtractionError(
+                            f"Docling conversion failed: {exc}",
+                            cause=exc,
+                        ) from exc
 
-        return self._build_raw_document(result, document)
+                # D-28: build the domain document BEFORE releasing resources (finally block).
+                raw_document = self._build_raw_document(result, document)
+            finally:
+                # D-32: proactively unload backend and run GC to mitigate memory
+                # growth across repeated extraction calls.
+                if result is not None:
+                    try:
+                        if hasattr(result, "input") and hasattr(result.input, "_backend"):
+                            result.input._backend.unload()
+                    except Exception:
+                        pass  # unload is best-effort; never crash the caller
+                    del result
+                gc.collect()
+
+        return raw_document
 
     def _build_raw_document(self, result: Any, document: RawInput) -> RawDocument:
         """Map a Docling ConversionResult to a domain RawDocument.
