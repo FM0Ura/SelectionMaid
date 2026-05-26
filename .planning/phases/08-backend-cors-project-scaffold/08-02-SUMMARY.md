@@ -88,6 +88,7 @@ completed: 2026-05-26
 1. **Task 1: Initialize Vite + Vue + Tailwind v4** - `acaa225` (feat)
 2. **Task 2: Setup shadcn-vue and Proxy** - `b5b5d76` (feat)
 3. **Task 3: Proof-of-Life and Dark Mode** - `7d59bd1` (feat)
+4. **Review fix: Align shadcn theme tokens** - `039ce82` (fix)
 
 ## Files Created/Modified
 
@@ -104,7 +105,7 @@ completed: 2026-05-26
 
 - Preserved the phase's Vite 6 and TypeScript 5.5 stack even though `create-vite@latest` generated newer package versions.
 - Removed the generated `@vue/tsconfig` package because its latest peer range requires TypeScript 5.8+ and the project uses explicit TS 5.5-compatible configs.
-- Accepted shadcn-vue's generated neutral token set; dark mode is forced by `class="dark"` on the `<html>` element.
+- Aligned shadcn-vue config/CSS with the UI spec's Inter font and zinc-family base token intent; dark mode is forced by `class="dark"` on the `<html>` element.
 
 ## Deviations from Plan
 
@@ -130,6 +131,10 @@ completed: 2026-05-26
 
 **Total deviations:** 2 auto-fixed (blocking toolchain issues).
 **Impact on plan:** Toolchain remains aligned with the documented phase stack and all planned artifacts were delivered.
+
+### Review Fixes
+
+- `039ce82` aligned generated shadcn-vue font/base-token metadata with the Phase 8 UI spec after the code review gate caught the mismatch.
 
 ## Issues Encountered
 
