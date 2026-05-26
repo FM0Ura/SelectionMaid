@@ -59,7 +59,10 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 4. A file with wrong type or size exceeding 50MB triggers an error state with a human-readable message before any network request is made
 5. A fetch that exceeds 130 seconds triggers a timeout error state with a clear message
 
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] [09-01-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-01-PLAN.md) — Frontend testing infrastructure and type definitions
+- [ ] [09-02-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-02-PLAN.md) — API layer, error mapping, and validation
+- [ ] [09-03-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-03-PLAN.md) — useUpload state machine composable
 
 ### Phase 10: Upload Interaction
 
@@ -142,7 +145,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | Phase | Milestone | Plans Complete | Status | Completed |
 | --- | --- | --- | --- | --- |
 | 8. Backend CORS + Project Scaffold | v2.0 | 2/2 | Complete   | 2026-05-26 |
-| 9. TypeScript Types + API Layer + State Machine | v2.0 | 0/? | Not started | - |
+| 9. TypeScript Types + API Layer + State Machine | v2.0 | 0/3 | Not started | - |
 | 10. Upload Interaction | v2.0 | 0/? | Not started | - |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 0/? | Not started | - |
 | 12. Result Display | v2.0 | 0/? | Not started | - |
