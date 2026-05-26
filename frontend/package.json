@@ -15,7 +15,9 @@
     "@vueuse/core": "^14.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dompurify": "^3.4.6",
     "lucide-vue-next": "^1.0.0",
+    "markdown-it": "^14.2.0",
     "motion-v": "^2.2.1",
     "reka-ui": "^2.9.8",
     "shadcn-vue": "^2.7.3",
@@ -25,6 +27,9 @@
     "vue": "^3.5.34"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "@types/dompurify": "^3.0.5",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^24.12.4",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vitest/ui": "^4.1.7",
