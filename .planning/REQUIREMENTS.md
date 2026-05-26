@@ -27,7 +27,7 @@
 
 ### Navigation & Polish
 
-- [ ] **NAV-01**: Usuário experimenta transição de view animada e suave entre a tela de upload e a tela de resultado
+- [x] **NAV-01**: Usuário experimenta transição de view animada e suave entre a tela de upload e a tela de resultado
 - [ ] **NAV-02**: Usuário vê mensagem de erro estruturada com botão de retry em caso de falha na API
 - [ ] **NAV-03**: Usuário vê tela de boas-vindas (estado vazio) na primeira visita antes do primeiro upload
 
@@ -85,7 +85,7 @@
 | RES-03 | Phase 12 | Pending |
 | RES-04 | Phase 12 | Pending |
 | RES-02 | Phase 13 | Pending |
-| NAV-01 | Phase 13 | Pending |
+| NAV-01 | Phase 13 | Complete |
 
 **Coverage:**
 

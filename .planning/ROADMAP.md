@@ -160,4 +160,4 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 10. Upload Interaction | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 12. Result Display | v2.0 | 3/3 | Complete | 2026-05-26 |
-| 13. Animation + View Transitions | v2.0 | 2/2 | In Progress | - |
+| 13. Animation + View Transitions | v2.0 | 1/2 | In Progress|  |
