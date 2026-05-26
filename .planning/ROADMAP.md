@@ -79,7 +79,9 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 3. A user who has never uploaded sees a welcoming idle/empty state with a clear call-to-action before the first upload
 4. If the API returns an error or the request fails, a structured error banner appears with a retry button that returns the user to the upload state
 
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] [10-01-PLAN.md](phases/10-upload-interaction/10-01-PLAN.md) — Foundation and Error UI
+- [ ] [10-02-PLAN.md](phases/10-upload-interaction/10-02-PLAN.md) — Interaction Logic and Animations
 
 **UI hint**: yes
 
@@ -145,8 +147,8 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | Phase | Milestone | Plans Complete | Status | Completed |
 | --- | --- | --- | --- | --- |
 | 8. Backend CORS + Project Scaffold | v2.0 | 2/2 | Complete   | 2026-05-26 |
-| 9. TypeScript Types + API Layer + State Machine | v2.0 | 0/3 | Not started | - |
-| 10. Upload Interaction | v2.0 | 0/? | Not started | - |
+| 9. TypeScript Types + API Layer + State Machine | v2.0 | 3/3 | Complete   | 2026-05-26 |
+| 10. Upload Interaction | v2.0 | 0/2 | In progress | - |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 0/? | Not started | - |
 | 12. Result Display | v2.0 | 0/? | Not started | - |
 | 13. Animation + View Transitions | v2.0 | 0/? | Not started | - |
