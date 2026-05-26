@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft } from 'lucide-vue-next'
+import { motion } from 'motion-v'
 import { Button } from '@/components/ui/button'
 import type { ExtractionResponse } from '@/types/api'
 import ChunkCard from './ChunkCard.vue'
@@ -13,6 +14,15 @@ defineProps<{
 defineEmits<{
   reset: []
 }>()
+
+const chunkListVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.07,
+    },
+  },
+}
 </script>
 
 <template>
@@ -31,8 +41,14 @@ defineEmits<{
 
     <MetadataCard :metadata="data.metadata" :elapsed-seconds="elapsedSeconds" />
 
-    <div class="space-y-4" aria-label="Chunks do documento">
+    <motion.div
+      class="space-y-4"
+      :variants="chunkListVariants"
+      initial="hidden"
+      animate="show"
+      aria-label="Chunks do documento"
+    >
       <ChunkCard v-for="chunk in data.chunks" :key="chunk.chunk_id" :chunk="chunk" />
-    </div>
+    </motion.div>
   </section>
 </template>
