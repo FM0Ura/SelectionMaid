@@ -80,16 +80,14 @@ Inter font loaded via shadcn-vue defaults. Tailwind CSS v4 utility classes apply
 | Role | Size | Weight | Line Height | Tailwind |
 |------|------|--------|-------------|---------|
 | Body | 16px | 400 (regular) | 1.5 | `text-base font-normal leading-normal` |
-| Label | 14px | 500 (medium) | 1.4 | `text-sm font-medium leading-snug` |
+| Label | 14px | 600 (semibold) | 1.4 | `text-sm font-semibold leading-snug` |
 | Heading | 20px | 600 (semibold) | 1.2 | `text-xl font-semibold leading-tight` |
-| Display | 28px | 700 (bold) | 1.15 | `text-2xl font-bold leading-tight` |
+| Display | 28px | 600 (semibold) | 1.15 | `text-2xl font-semibold leading-tight` |
+
+**Weights in use: 400 (regular) and 600 (semibold) only.**
 
 **Phase 8 scope:** Only Body and Label apply to the proof-of-life scaffold. Heading
 and Display are declared here for downstream phases to inherit.
-
-Maximum 2 weights in active use per component: regular (400) + semibold (600).
-Medium (500) is used only for interactive labels. Bold (700) is reserved for the
-display/hero heading in Phase 10+.
 
 ---
 
