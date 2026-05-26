@@ -99,7 +99,9 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 2. The shimmer animation uses a sweeping gradient keyframe (not a static color), communicating active processing
 3. An elapsed time counter increments during processing so the user knows time is passing
 
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] [11-01-PLAN.md](phases/11-skeleton-loading-processing-feedback/11-01-PLAN.md) — Timer Logic & Atomic Components
+- [ ] [11-02-PLAN.md](phases/11-skeleton-loading-processing-feedback/11-02-PLAN.md) — Layout Transition & Flow Integration
 
 **UI hint**: yes
 
@@ -149,6 +151,6 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 8. Backend CORS + Project Scaffold | v2.0 | 2/2 | Complete   | 2026-05-26 |
 | 9. TypeScript Types + API Layer + State Machine | v2.0 | 3/3 | Complete   | 2026-05-26 |
 | 10. Upload Interaction | v2.0 | 2/2 | Complete | 2026-05-26 |
-| 11. Skeleton Loading + Processing Feedback | v2.0 | 0/? | Not started | - |
+| 11. Skeleton Loading + Processing Feedback | v2.0 | 0/2 | Not started | - |
 | 12. Result Display | v2.0 | 0/? | Not started | - |
 | 13. Animation + View Transitions | v2.0 | 0/? | Not started | - |
