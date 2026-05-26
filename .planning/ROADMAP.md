@@ -15,7 +15,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 - [x] **Phase 8: Backend CORS + Project Scaffold** — Enable browser access and establish the frontend development environment (completed 2026-05-26)
 - [x] **Phase 9: TypeScript Types + API Layer + State Machine** — Typed contract and tested state machine before any component is built (completed 2026-05-26)
-- [ ] **Phase 10: Upload Interaction** — Complete drop zone with drag, click fallback, validation, and error handling
+- [x] **Phase 10: Upload Interaction** — Complete drop zone with drag, click fallback, validation, and error handling (completed 2026-05-26)
 - [ ] **Phase 11: Skeleton Loading + Processing Feedback** — Perceived-performance layer for the 1-30 second backend wait
 - [ ] **Phase 12: Result Display** — Chunk list with Markdown rendering, copy-to-clipboard, and metadata panel
 - [ ] **Phase 13: Animation + View Transitions** — Stagger reveal, smooth state transitions, and drag-active visual upgrade
@@ -80,8 +80,8 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 4. If the API returns an error or the request fails, a structured error banner appears with a retry button that returns the user to the upload state
 
 **Plans**: 2 plans
-- [ ] [10-01-PLAN.md](phases/10-upload-interaction/10-01-PLAN.md) — Foundation and Error UI
-- [ ] [10-02-PLAN.md](phases/10-upload-interaction/10-02-PLAN.md) — Interaction Logic and Animations
+- [x] [10-01-PLAN.md](phases/10-upload-interaction/10-01-PLAN.md) — Foundation and Error UI
+- [x] [10-02-PLAN.md](phases/10-upload-interaction/10-02-PLAN.md) — Interaction Logic and Animations
 
 **UI hint**: yes
 
@@ -148,7 +148,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | --- | --- | --- | --- | --- |
 | 8. Backend CORS + Project Scaffold | v2.0 | 2/2 | Complete   | 2026-05-26 |
 | 9. TypeScript Types + API Layer + State Machine | v2.0 | 3/3 | Complete   | 2026-05-26 |
-| 10. Upload Interaction | v2.0 | 0/2 | In progress | - |
+| 10. Upload Interaction | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 0/? | Not started | - |
 | 12. Result Display | v2.0 | 0/? | Not started | - |
 | 13. Animation + View Transitions | v2.0 | 0/? | Not started | - |

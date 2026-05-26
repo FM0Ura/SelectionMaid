@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Frontend
 status: planning
-last_updated: "2026-05-26T09:55:37.456Z"
+last_updated: "2026-05-26T10:08:00.000Z"
 last_activity: 2026-05-26
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-  percent: 33
+  completed_phases: 3
+  total_plans: 7
+  completed_plans: 7
+  percent: 50
 ---
 
 # Project State
@@ -21,16 +21,16 @@ See: .planning/PROJECT.md
 
 **Core value:** Documentos entram em qualquer formato suportado, chunks Markdown normalizados saem via interface estável — independente da biblioteca de extração ou protocolo de entrada usados.
 
-**Current focus:** Phase 10 — Upload Interaction
+**Current focus:** Phase 11 — Skeleton Loading + Processing Feedback
 
 ## Current Position
 
-Phase: 10
+Phase: 11
 Plan: Not started
 Status: Ready to plan
 Last activity: 2026-05-26
 
-Progress: [###       ] 33% (2/6 phases complete)
+Progress: [#####     ] 50% (3/6 phases complete)
 
 ## Performance Metrics (v1.0 Lifecycle)
 
@@ -52,12 +52,13 @@ Progress: [###       ] 33% (2/6 phases complete)
 - Frontend stack: Vue 3.5 + TypeScript 5.5 + Vite 6 + Tailwind CSS v4 + shadcn-vue + motion-v + @vueuse/core.
 - State management: single `useUpload` composable (no Pinia); discriminated union state machine implemented in Phase 9.
 - Frontend API layer: native `fetch` with `AbortSignal.timeout(130_000)`, typed `ExtractionResponse`, and client-side 50MB PDF/DOCX/HTML validation implemented in Phase 9.
+- Upload interaction: central DropZone component with drag overlay, manual file picker, multiple-file guard, and structured retryable error banner implemented in Phase 10.
 - No Axios: native `fetch` with `AbortSignal.timeout(130_000)`.
 - Animation: motion-v v2.2 + Vue `<TransitionGroup>` CSS stagger; animate only `transform` + `opacity`.
 
 ### Pending Todos
 
-- Plan Phase 10 (Upload Interaction).
+- Plan Phase 11 (Skeleton Loading + Processing Feedback).
 
 ### Blockers/Concerns
 
@@ -74,4 +75,4 @@ Progress: [###       ] 33% (2/6 phases complete)
 
 ---
 
-Last updated: 2026-05-26 after Phase 9 execution
+Last updated: 2026-05-26 after Phase 10 execution
