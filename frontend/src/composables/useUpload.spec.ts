@@ -85,6 +85,19 @@ describe('useUpload', () => {
     expect(upload.state.value.status).toBe('error')
   })
 
+  it('allows UI-level errors without calling the API', () => {
+    const upload = useUpload()
+
+    upload.setError('Envie apenas um arquivo.', 'MULTIPLE_FILES')
+
+    expect(postIngestMock).not.toHaveBeenCalled()
+    expect(upload.state.value).toEqual({
+      status: 'error',
+      message: 'Envie apenas um arquivo.',
+      code: 'MULTIPLE_FILES',
+    })
+  })
+
   it('transitions through upload and processing to success', async () => {
     const upload = useUpload()
     let resolveUpload: (response: ExtractionResponse) => void = () => undefined

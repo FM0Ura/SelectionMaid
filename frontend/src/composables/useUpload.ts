@@ -15,10 +15,16 @@ export function useUpload() {
     state.value = { status: 'idle' }
   }
 
+  function setError(message: string, code?: string) {
+    state.value = code === undefined
+      ? { status: 'error', message }
+      : { status: 'error', message, code }
+  }
+
   async function startUpload(file: File) {
     const validationError = validateFile(file)
     if (validationError !== null) {
-      state.value = { status: 'error', message: validationError }
+      setError(validationError)
       return
     }
 
@@ -38,6 +44,7 @@ export function useUpload() {
     state: readonly(state),
     startUpload,
     setDragging,
+    setError,
     reset,
   }
 }
