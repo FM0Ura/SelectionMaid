@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Frontend
 status: planning
-last_updated: "2026-05-26T02:35:56.734Z"
+last_updated: "2026-05-26T06:52:00.000Z"
 last_activity: 2026-05-26
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 17
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 5
+  percent: 33
 ---
 
 # Project State
@@ -21,16 +21,16 @@ See: .planning/PROJECT.md
 
 **Core value:** Documentos entram em qualquer formato suportado, chunks Markdown normalizados saem via interface estável — independente da biblioteca de extração ou protocolo de entrada usados.
 
-**Current focus:** Phase 9 — typescript types + api layer + state machine
+**Current focus:** Phase 10 — Upload Interaction
 
 ## Current Position
 
-Phase: 9
+Phase: 10
 Plan: Not started
 Status: Ready to plan
 Last activity: 2026-05-26
 
-Progress: [##        ] 17% (1/6 phases complete)
+Progress: [###       ] 33% (2/6 phases complete)
 
 ## Performance Metrics (v1.0 Lifecycle)
 
@@ -50,13 +50,14 @@ Progress: [##        ] 17% (1/6 phases complete)
 - Estilo visual: dark mode minimalista.
 - CORS será habilitado no FastAPI para suportar a SPA (INT-01, Phase 8).
 - Frontend stack: Vue 3.5 + TypeScript 5.5 + Vite 6 + Tailwind CSS v4 + shadcn-vue + motion-v + @vueuse/core.
-- State management: single `useUpload` composable (no Pinia); discriminated union state machine.
+- State management: single `useUpload` composable (no Pinia); discriminated union state machine implemented in Phase 9.
+- Frontend API layer: native `fetch` with `AbortSignal.timeout(130_000)`, typed `ExtractionResponse`, and client-side 50MB PDF/DOCX/HTML validation implemented in Phase 9.
 - No Axios: native `fetch` with `AbortSignal.timeout(130_000)`.
 - Animation: motion-v v2.2 + Vue `<TransitionGroup>` CSS stagger; animate only `transform` + `opacity`.
 
 ### Pending Todos
 
-- Plan Phase 8 (Backend CORS + Project Scaffold).
+- Plan Phase 10 (Upload Interaction).
 
 ### Blockers/Concerns
 
@@ -73,4 +74,4 @@ Progress: [##        ] 17% (1/6 phases complete)
 
 ---
 
-Last updated: 2026-05-25 after v2.0 roadmap creation
+Last updated: 2026-05-26 after Phase 9 execution

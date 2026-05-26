@@ -14,7 +14,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Milestone Goal:** SPA Vue 3 + Vite que expõe todo o pipeline do SelectionMaid com dark mode minimalista, drag-and-drop animado, skeleton loading, stagger animation na revelação dos chunks, e transições de view suaves — consumindo a FastAPI existente via HTTP.
 
 - [x] **Phase 8: Backend CORS + Project Scaffold** — Enable browser access and establish the frontend development environment (completed 2026-05-26)
-- [ ] **Phase 9: TypeScript Types + API Layer + State Machine** — Typed contract and tested state machine before any component is built
+- [x] **Phase 9: TypeScript Types + API Layer + State Machine** — Typed contract and tested state machine before any component is built (completed 2026-05-26)
 - [ ] **Phase 10: Upload Interaction** — Complete drop zone with drag, click fallback, validation, and error handling
 - [ ] **Phase 11: Skeleton Loading + Processing Feedback** — Perceived-performance layer for the 1-30 second backend wait
 - [ ] **Phase 12: Result Display** — Chunk list with Markdown rendering, copy-to-clipboard, and metadata panel
@@ -60,9 +60,9 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 5. A fetch that exceeds 130 seconds triggers a timeout error state with a clear message
 
 **Plans**: 3 plans
-- [ ] [09-01-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-01-PLAN.md) — Frontend testing infrastructure and type definitions
-- [ ] [09-02-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-02-PLAN.md) — API layer, error mapping, and validation
-- [ ] [09-03-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-03-PLAN.md) — useUpload state machine composable
+- [x] [09-01-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-01-PLAN.md) — Frontend testing infrastructure and type definitions
+- [x] [09-02-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-02-PLAN.md) — API layer, error mapping, and validation
+- [x] [09-03-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-03-PLAN.md) — useUpload state machine composable
 
 ### Phase 10: Upload Interaction
 
