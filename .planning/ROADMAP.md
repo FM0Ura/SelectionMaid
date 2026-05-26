@@ -16,7 +16,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [x] **Phase 8: Backend CORS + Project Scaffold** — Enable browser access and establish the frontend development environment (completed 2026-05-26)
 - [x] **Phase 9: TypeScript Types + API Layer + State Machine** — Typed contract and tested state machine before any component is built (completed 2026-05-26)
 - [x] **Phase 10: Upload Interaction** — Complete drop zone with drag, click fallback, validation, and error handling (completed 2026-05-26)
-- [ ] **Phase 11: Skeleton Loading + Processing Feedback** — Perceived-performance layer for the 1-30 second backend wait
+- [x] **Phase 11: Skeleton Loading + Processing Feedback** — Perceived-performance layer for the 1-30 second backend wait (completed 2026-05-26)
 - [ ] **Phase 12: Result Display** — Chunk list with Markdown rendering, copy-to-clipboard, and metadata panel
 - [ ] **Phase 13: Animation + View Transitions** — Stagger reveal, smooth state transitions, and drag-active visual upgrade
 
@@ -100,8 +100,8 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 3. An elapsed time counter increments during processing so the user knows time is passing
 
 **Plans**: 2 plans
-- [ ] [11-01-PLAN.md](phases/11-skeleton-loading-processing-feedback/11-01-PLAN.md) — Timer Logic & Atomic Components
-- [ ] [11-02-PLAN.md](phases/11-skeleton-loading-processing-feedback/11-02-PLAN.md) — Layout Transition & Flow Integration
+- [x] [11-01-PLAN.md](phases/11-skeleton-loading-processing-feedback/11-01-PLAN.md) — Timer Logic & Atomic Components
+- [x] [11-02-PLAN.md](phases/11-skeleton-loading-processing-feedback/11-02-PLAN.md) — Layout Transition & Flow Integration
 
 **UI hint**: yes
 
@@ -151,6 +151,6 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 8. Backend CORS + Project Scaffold | v2.0 | 2/2 | Complete   | 2026-05-26 |
 | 9. TypeScript Types + API Layer + State Machine | v2.0 | 3/3 | Complete   | 2026-05-26 |
 | 10. Upload Interaction | v2.0 | 2/2 | Complete | 2026-05-26 |
-| 11. Skeleton Loading + Processing Feedback | v2.0 | 0/2 | Not started | - |
+| 11. Skeleton Loading + Processing Feedback | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 12. Result Display | v2.0 | 0/? | Not started | - |
 | 13. Animation + View Transitions | v2.0 | 0/? | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Frontend
 status: planning
-last_updated: "2026-05-26T10:10:14.405Z"
+last_updated: "2026-05-26T10:31:00.000Z"
 last_activity: 2026-05-26
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
-  percent: 50
+  completed_phases: 4
+  total_plans: 9
+  completed_plans: 9
+  percent: 67
 ---
 
 # Project State
@@ -21,16 +21,16 @@ See: .planning/PROJECT.md
 
 **Core value:** Documentos entram em qualquer formato suportado, chunks Markdown normalizados saem via interface estável — independente da biblioteca de extração ou protocolo de entrada usados.
 
-**Current focus:** Phase 11 — Skeleton Loading + Processing Feedback
+**Current focus:** Phase 12 — Result Display
 
 ## Current Position
 
-Phase: 11
+Phase: 12
 Plan: Not started
 Status: Ready to plan
 Last activity: 2026-05-26
 
-Progress: [#####     ] 50% (3/6 phases complete)
+Progress: [#######   ] 67% (4/6 phases complete)
 
 ## Performance Metrics (v1.0 Lifecycle)
 
@@ -53,12 +53,13 @@ Progress: [#####     ] 50% (3/6 phases complete)
 - State management: single `useUpload` composable (no Pinia); discriminated union state machine implemented in Phase 9.
 - Frontend API layer: native `fetch` with `AbortSignal.timeout(130_000)`, typed `ExtractionResponse`, and client-side 50MB PDF/DOCX/HTML validation implemented in Phase 9.
 - Upload interaction: central DropZone component with drag overlay, manual file picker, multiple-file guard, and structured retryable error banner implemented in Phase 10.
+- Processing feedback: shared upload state now drives a compact processing card, elapsed timer, and shimmer skeleton chunk placeholders implemented in Phase 11.
 - No Axios: native `fetch` with `AbortSignal.timeout(130_000)`.
 - Animation: motion-v v2.2 + Vue `<TransitionGroup>` CSS stagger; animate only `transform` + `opacity`.
 
 ### Pending Todos
 
-- Plan Phase 11 (Skeleton Loading + Processing Feedback).
+- Plan Phase 12 (Result Display).
 
 ### Blockers/Concerns
 
@@ -75,4 +76,4 @@ Progress: [#####     ] 50% (3/6 phases complete)
 
 ---
 
-Last updated: 2026-05-26 after Phase 10 execution
+Last updated: 2026-05-26 after Phase 11 execution
