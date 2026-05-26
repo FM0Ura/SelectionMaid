@@ -13,7 +13,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 **Milestone Goal:** SPA Vue 3 + Vite que expõe todo o pipeline do SelectionMaid com dark mode minimalista, drag-and-drop animado, skeleton loading, stagger animation na revelação dos chunks, e transições de view suaves — consumindo a FastAPI existente via HTTP.
 
-- [ ] **Phase 8: Backend CORS + Project Scaffold** — Enable browser access and establish the frontend development environment
+- [x] **Phase 8: Backend CORS + Project Scaffold** — Enable browser access and establish the frontend development environment (completed 2026-05-26)
 - [ ] **Phase 9: TypeScript Types + API Layer + State Machine** — Typed contract and tested state machine before any component is built
 - [ ] **Phase 10: Upload Interaction** — Complete drop zone with drag, click fallback, validation, and error handling
 - [ ] **Phase 11: Skeleton Loading + Processing Feedback** — Perceived-performance layer for the 1-30 second backend wait
@@ -38,8 +38,8 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 4. Tailwind CSS v4 and shadcn-vue are initialized and a sample dark-mode component renders correctly
 
 **Plans**: 2 plans
-- [ ] 08-01-PLAN.md — Backend CORS configuration and integration tests
-- [ ] 08-02-PLAN.md — Frontend project scaffold (Vue 3, Vite, Tailwind v4, shadcn-vue)
+- [x] [08-01-PLAN.md](phases/08-backend-cors-project-scaffold/08-01-PLAN.md) — Backend CORS configuration and integration tests
+- [x] [08-02-PLAN.md](phases/08-backend-cors-project-scaffold/08-02-PLAN.md) — Frontend project scaffold (Vue 3, Vite, Tailwind v4, shadcn-vue)
 
 **UI hint**: yes
 
@@ -141,7 +141,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 | --- | --- | --- | --- | --- |
-| 8. Backend CORS + Project Scaffold | v2.0 | 2/2 | Not started | - |
+| 8. Backend CORS + Project Scaffold | v2.0 | 2/2 | Complete   | 2026-05-26 |
 | 9. TypeScript Types + API Layer + State Machine | v2.0 | 0/? | Not started | - |
 | 10. Upload Interaction | v2.0 | 0/? | Not started | - |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 0/? | Not started | - |
