@@ -18,7 +18,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [x] **Phase 10: Upload Interaction** — Complete drop zone with drag, click fallback, validation, and error handling (completed 2026-05-26)
 - [x] **Phase 11: Skeleton Loading + Processing Feedback** — Perceived-performance layer for the 1-30 second backend wait (completed 2026-05-26)
 - [x] **Phase 12: Result Display** — Chunk list with Markdown rendering, copy-to-clipboard, and metadata panel (completed 2026-05-26)
-- [ ] **Phase 13: Animation + View Transitions** — Stagger reveal, smooth state transitions, and drag-active visual upgrade
+- [x] **Phase 13: Animation + View Transitions** — Stagger reveal, smooth state transitions, and drag-active visual upgrade (completed 2026-05-26)
 
 ## Phase Details
 
@@ -160,4 +160,4 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 10. Upload Interaction | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 12. Result Display | v2.0 | 3/3 | Complete | 2026-05-26 |
-| 13. Animation + View Transitions | v2.0 | 1/2 | In Progress|  |
+| 13. Animation + View Transitions | v2.0 | 2/2 | Complete   | 2026-05-26 |
