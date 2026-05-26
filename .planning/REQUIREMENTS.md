@@ -59,7 +59,7 @@
 ## Out of Scope
 
 | Feature | Reason |
-|---------|--------|
+| --- | --- |
 | Autenticação / autorização | Ferramenta interna; infraestrutura do ambiente de deploy |
 | Upload queue / multi-arquivo simultâneo | API backend é síncrona e processa um arquivo por vez; v1.0 não suporta |
 | Barra de progresso de upload em bytes | `fetch` nativo não expõe eventos de progresso de upload; XHR adiciona complexidade desnecessária para v2.0 |
@@ -70,30 +70,30 @@
 
 ## Traceability
 
-Preenchido durante a criação do roadmap.
-
 | Requirement | Phase | Status |
-|-------------|-------|--------|
+| --- | --- | --- |
 | INT-01 | Phase 8 | Pending |
-| UPL-01 | Phase ? | Pending |
-| UPL-02 | Phase ? | Pending |
-| UPL-03 | Phase ? | Pending |
-| PROC-01 | Phase ? | Pending |
-| PROC-02 | Phase ? | Pending |
-| PROC-03 | Phase ? | Pending |
-| RES-01 | Phase ? | Pending |
-| RES-02 | Phase ? | Pending |
-| RES-03 | Phase ? | Pending |
-| RES-04 | Phase ? | Pending |
-| NAV-01 | Phase ? | Pending |
-| NAV-02 | Phase ? | Pending |
-| NAV-03 | Phase ? | Pending |
+| UPL-03 | Phase 9 | Pending |
+| PROC-01 | Phase 9 | Pending |
+| PROC-03 | Phase 9 | Pending |
+| UPL-01 | Phase 10 | Pending |
+| UPL-02 | Phase 10 | Pending |
+| NAV-02 | Phase 10 | Pending |
+| NAV-03 | Phase 10 | Pending |
+| PROC-02 | Phase 11 | Pending |
+| RES-01 | Phase 12 | Pending |
+| RES-03 | Phase 12 | Pending |
+| RES-04 | Phase 12 | Pending |
+| RES-02 | Phase 13 | Pending |
+| NAV-01 | Phase 13 | Pending |
 
 **Coverage:**
+
 - v2.0 requirements: 14 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 14 ⚠️
+- Mapped to phases: 14
+- Unmapped: 0 ✓
 
 ---
+
 Requirements defined: 2026-05-25
-Last updated: 2026-05-25 after initial definition
+Last updated: 2026-05-25 after roadmap creation (traceability complete)
