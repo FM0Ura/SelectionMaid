@@ -60,6 +60,10 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 5. A fetch that exceeds 130 seconds triggers a timeout error state with a clear message
 
 **Plans**: 3 plans
+Plans:
+- [ ] 12-01-PLAN.md — Foundation and Markdown Rendering
+- [ ] 12-02-PLAN.md — Result Display Components
+- [ ] 12-03-PLAN.md — Result View Integration
 - [x] [09-01-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-01-PLAN.md) — Frontend testing infrastructure and type definitions
 - [x] [09-02-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-02-PLAN.md) — API layer, error mapping, and validation
 - [x] [09-03-PLAN.md](phases/09-typescript-types-api-layer-state-machine/09-03-PLAN.md) — useUpload state machine composable
@@ -120,7 +124,11 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 3. A metadata panel displays the document's inferred type, detected language, inferred title, and processing time
 4. A reset button on the result view returns the user to the idle upload state
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 12-01-PLAN.md — Foundation and Markdown Rendering
+- [ ] 12-02-PLAN.md — Result Display Components
+- [ ] 12-03-PLAN.md — Result View Integration
 
 **UI hint**: yes
 
@@ -152,5 +160,5 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 9. TypeScript Types + API Layer + State Machine | v2.0 | 3/3 | Complete   | 2026-05-26 |
 | 10. Upload Interaction | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 2/2 | Complete | 2026-05-26 |
-| 12. Result Display | v2.0 | 0/? | Not started | - |
+| 12. Result Display | v2.0 | 0/3 | Not started | - |
 | 13. Animation + View Transitions | v2.0 | 0/? | Not started | - |
