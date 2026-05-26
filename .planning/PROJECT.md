@@ -15,6 +15,8 @@ SelectionMaid é um serviço de curadoria e normalização de documentos — a "
 
 **Goal:** Criar uma SPA Vue 3 + Vite que expõe todo o pipeline do SelectionMaid com dark mode minimalista e animações de alta qualidade.
 
+**Current state:** Phase 8 complete — backend CORS is enabled for the local Vite SPA, and the Vue/Vite/Tailwind/shadcn frontend scaffold is in place.
+
 **Target features:**
 
 - Upload via drag-and-drop animado com feedback visual rico
@@ -41,6 +43,8 @@ Documentos entram em qualquer formato, chunks Markdown normalizados saem via uma
 - [x] Retornar lista de chunks com metadados em schema consistente
 - [x] Interface HTTP (FastAPI) isolada como adaptador de entrada plugável
 - [x] Arquitetura hexagonal: todo componente de processamento é um Port com Adapter substituível
+- [x] CORS habilitado no backend para consumo pela SPA — Validated in Phase 8
+- [x] Frontend Vue 3 + Vite scaffold com Tailwind CSS v4, shadcn-vue e dark mode fixo — Validated in Phase 8
 
 ### Active (v2.0)
 
@@ -49,7 +53,6 @@ Documentos entram em qualquer formato, chunks Markdown normalizados saem via uma
 - [ ] Visualização dos chunks com stagger animation na revelação
 - [ ] Transições de view suaves entre seções
 - [ ] Exibição dos metadados retornados pela API
-- [ ] CORS habilitado no backend para consumo pela SPA
 
 ### Out of Scope
 
@@ -106,4 +109,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-Last updated: 2026-05-25 after v2.0 milestone start
+Last updated: 2026-05-26 after Phase 8 completion
