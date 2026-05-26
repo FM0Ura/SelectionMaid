@@ -37,7 +37,9 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 3. The Vite dev proxy routes `/ingest` to `localhost:8000` so no CORS error appears in the browser console during local development
 4. Tailwind CSS v4 and shadcn-vue are initialized and a sample dark-mode component renders correctly
 
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 08-01-PLAN.md — Backend CORS configuration and integration tests
+- [ ] 08-02-PLAN.md — Frontend project scaffold (Vue 3, Vite, Tailwind v4, shadcn-vue)
 
 **UI hint**: yes
 
@@ -139,7 +141,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 | --- | --- | --- | --- | --- |
-| 8. Backend CORS + Project Scaffold | v2.0 | 0/? | Not started | - |
+| 8. Backend CORS + Project Scaffold | v2.0 | 2/2 | Not started | - |
 | 9. TypeScript Types + API Layer + State Machine | v2.0 | 0/? | Not started | - |
 | 10. Upload Interaction | v2.0 | 0/? | Not started | - |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 0/? | Not started | - |
