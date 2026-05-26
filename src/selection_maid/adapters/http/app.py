@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 from typing import AsyncIterator
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from selection_maid.adapters.chunker.markdown import build_markdown_chunker
 from selection_maid.adapters.enricher.default import build_metadata_enricher
@@ -98,7 +99,7 @@ def create_app() -> FastAPI:
     Returns:
         A FastAPI application ready to be served by uvicorn.
     """
-    return FastAPI(
+    app = FastAPI(
         title="SelectionMaid",
         description=(
             "Document curation and normalisation service. "
@@ -108,6 +109,14 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=_lifespan,
     )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173"],
+        allow_methods=["POST", "OPTIONS"],
+        allow_headers=["*"],
+        allow_credentials=True,
+    )
+    return app
 
 
 # Module-level instance for uvicorn: selection_maid.adapters.http.app:app (D-83)
