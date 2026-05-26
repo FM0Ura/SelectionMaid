@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Frontend
-status: completed
-last_updated: "2026-05-26T02:19:16.864Z"
+status: ready_to_plan
+last_updated: 2026-05-26T02:28:00.533Z
 last_activity: 2026-05-26 -- Phase 08 marked complete
 progress:
   total_phases: 6
@@ -11,6 +11,7 @@ progress:
   total_plans: 2
   completed_plans: 2
   percent: 17
+stopped_at: Phase 08 complete (2/2) — ready to discuss Phase 9
 ---
 
 # Project State
@@ -21,14 +22,14 @@ See: .planning/PROJECT.md
 
 **Core value:** Documentos entram em qualquer formato suportado, chunks Markdown normalizados saem via interface estável — independente da biblioteca de extração ou protocolo de entrada usados.
 
-**Current focus:** Phase 08 — backend-cors-project-scaffold
+**Current focus:** Phase 9 — typescript types + api layer + state machine
 
 ## Current Position
 
-Phase: 08 — COMPLETE
-Plan: 2 of 2
-Status: Phase 08 complete
-Last activity: 2026-05-26 -- Phase 08 marked complete
+Phase: 9
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-05-26
 
 Progress: [##        ] 17% (1/6 phases complete)
 
