@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { LoaderCircle } from 'lucide-vue-next'
+import { motion } from 'motion-v'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -15,7 +16,12 @@ const formattedElapsed = computed(() => {
 </script>
 
 <template>
-  <div class="flex w-full items-center justify-center gap-4" aria-live="polite">
+  <motion.div
+    layout-id="metadata-card"
+    class="flex w-full items-center justify-center gap-4"
+    :transition="{ type: 'spring', stiffness: 260, damping: 30 }"
+    aria-live="polite"
+  >
     <LoaderCircle class="size-8 shrink-0 animate-spin text-primary" aria-hidden="true" />
     <div class="min-w-0 text-left">
       <p class="font-semibold">Processando documento...</p>
@@ -24,5 +30,5 @@ const formattedElapsed = computed(() => {
         <span class="font-mono text-primary">{{ formattedElapsed }}</span>
       </p>
     </div>
-  </div>
+  </motion.div>
 </template>
