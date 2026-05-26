@@ -14,6 +14,7 @@ const uploadState = ref<UploadState>({ status: 'idle' })
 const startUpload = vi.fn()
 const setDragging = vi.fn()
 const setError = vi.fn()
+const elapsedSeconds = ref(0)
 const reset = vi.fn(() => {
   uploadState.value = { status: 'idle' }
 })
@@ -23,6 +24,7 @@ let dropOptions: DropOptions = {}
 vi.mock('@/composables/useUpload', () => ({
   useUpload: vi.fn(() => ({
     state: uploadState,
+    elapsedSeconds,
     startUpload,
     setDragging,
     setError,
@@ -52,6 +54,7 @@ function pdfFile(name = 'paper.pdf') {
 describe('DropZone', () => {
   beforeEach(() => {
     uploadState.value = { status: 'idle' }
+    elapsedSeconds.value = 0
     isOverDropZone.value = false
     dropOptions = {}
     vi.clearAllMocks()
@@ -84,6 +87,19 @@ describe('DropZone', () => {
 
     expect(wrapper.find('[data-testid="drop-overlay"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Solte para enviar')
+  })
+
+  it('renders compact processing feedback with elapsed time', () => {
+    uploadState.value = { status: 'processing' }
+    elapsedSeconds.value = 65
+
+    const wrapper = mount(DropZone)
+
+    expect(wrapper.get('[data-testid="drop-zone"]').classes()).toContain('min-h-48')
+    expect(wrapper.text()).toContain('Processando documento')
+    expect(wrapper.text()).toContain('01:05')
+    expect(wrapper.find('[data-testid="file-input"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Selecionar arquivo')
   })
 
   it('starts upload when a single file is dropped', () => {

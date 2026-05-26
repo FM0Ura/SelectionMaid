@@ -1,4 +1,5 @@
-import { readonly, ref } from 'vue'
+import { useIntervalFn } from '@vueuse/core'
+import { readonly, ref, watch } from 'vue'
 import { mapApiError } from '@/api/errors'
 import { postIngest } from '@/api/ingest'
 import { validateFile } from '@/lib/validators'
@@ -6,6 +7,27 @@ import type { UploadState } from '@/types/api'
 
 export function useUpload() {
   const state = ref<UploadState>({ status: 'idle' })
+  const elapsedSeconds = ref(0)
+  const { pause, resume } = useIntervalFn(
+    () => {
+      elapsedSeconds.value += 1
+    },
+    1000,
+    { immediate: false },
+  )
+
+  watch(
+    () => state.value.status,
+    (status) => {
+      if (status === 'processing') {
+        elapsedSeconds.value = 0
+        resume()
+        return
+      }
+
+      pause()
+    },
+  )
 
   function setDragging(isDragging: boolean) {
     state.value = isDragging ? { status: 'dragging' } : { status: 'idle' }
@@ -42,6 +64,7 @@ export function useUpload() {
 
   return {
     state: readonly(state),
+    elapsedSeconds: readonly(elapsedSeconds),
     startUpload,
     setDragging,
     setError,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useDropZone } from '@vueuse/core'
-import { FileUp, LoaderCircle, UploadCloud } from 'lucide-vue-next'
+import { FileUp, UploadCloud } from 'lucide-vue-next'
 import { motion } from 'motion-v'
 import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
@@ -8,8 +8,13 @@ import { Card } from '@/components/ui/card'
 import { useUpload } from '@/composables/useUpload'
 import DropOverlay from './DropOverlay.vue'
 import ErrorBanner from './ErrorBanner.vue'
+import ProcessingCard from './ProcessingCard.vue'
 
-const upload = useUpload()
+const props = defineProps<{
+  upload?: ReturnType<typeof useUpload>
+}>()
+
+const upload = props.upload ?? useUpload()
 const dropZoneRef = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -22,6 +27,8 @@ const acceptedTypes = [
 const isBusy = computed(() =>
   upload.state.value.status === 'uploading' || upload.state.value.status === 'processing',
 )
+
+const isProcessing = computed(() => upload.state.value.status === 'processing')
 
 const { isOverDropZone } = useDropZone(dropZoneRef, {
   multiple: true,
@@ -65,8 +72,12 @@ function handleFiles(files: File[] | null) {
     <motion.div
       ref="dropZoneRef"
       data-testid="drop-zone"
-      class="relative flex min-h-96 flex-col items-center justify-center gap-6 p-8 text-center transition-colors"
-      :class="upload.state.value.status === 'dragging' ? 'border-primary' : ''"
+      layout
+      class="relative flex flex-col items-center justify-center gap-6 text-center transition-colors"
+      :class="[
+        upload.state.value.status === 'dragging' ? 'border-primary' : '',
+        isProcessing ? 'min-h-48 p-6' : 'min-h-96 p-8',
+      ]"
       :animate="upload.state.value.status === 'dragging'
         ? {
           boxShadow: [
@@ -93,14 +104,12 @@ function handleFiles(files: File[] | null) {
         <ErrorBanner :message="upload.state.value.message" @retry="upload.reset" />
       </template>
 
-      <template v-else-if="isBusy">
-        <LoaderCircle class="size-10 animate-spin text-primary" aria-hidden="true" />
-        <div class="space-y-2">
-          <h1 class="text-xl font-semibold">Processando documento</h1>
-          <p class="max-w-md text-sm text-muted-foreground">
-            O arquivo foi enviado. O SelectionMaid está preparando os chunks Markdown.
-          </p>
-        </div>
+      <template v-else-if="isProcessing">
+        <ProcessingCard :elapsed-seconds="upload.elapsedSeconds.value" />
+      </template>
+
+      <template v-else-if="upload.state.value.status === 'uploading'">
+        <ProcessingCard :elapsed-seconds="0" />
       </template>
 
       <template v-else>

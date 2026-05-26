@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { mapApiError } from '@/api/errors'
 import { postIngest } from '@/api/ingest'
@@ -59,6 +59,10 @@ describe('useUpload', () => {
     )
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('starts in idle state', () => {
     const upload = useUpload()
 
@@ -96,6 +100,31 @@ describe('useUpload', () => {
       message: 'Envie apenas um arquivo.',
       code: 'MULTIPLE_FILES',
     })
+  })
+
+  it('tracks elapsed seconds only during processing', async () => {
+    vi.useFakeTimers()
+    const upload = useUpload()
+    let resolveUpload: (response: ExtractionResponse) => void = () => undefined
+    postIngestMock.mockReturnValue(
+      new Promise<ExtractionResponse>((resolve) => {
+        resolveUpload = resolve
+      }),
+    )
+
+    const promise = upload.startUpload(pdfFile())
+    expect(upload.state.value.status).toBe('processing')
+    expect(upload.elapsedSeconds.value).toBe(0)
+
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(upload.elapsedSeconds.value).toBe(2)
+
+    resolveUpload(extractionResponse)
+    await promise
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(upload.state.value.status).toBe('success')
+    expect(upload.elapsedSeconds.value).toBe(2)
   })
 
   it('transitions through upload and processing to success', async () => {
