@@ -75,19 +75,19 @@ function handleFiles(files: File[] | null) {
       layout
       class="relative flex flex-col items-center justify-center gap-6 text-center transition-colors"
       :class="[
-        upload.state.value.status === 'dragging' ? 'border-primary' : '',
+        upload.state.value.status === 'dragging' ? 'border-primary backdrop-blur-md' : '',
         isProcessing ? 'min-h-48 p-6' : 'min-h-96 p-8',
       ]"
       :animate="upload.state.value.status === 'dragging'
         ? {
           boxShadow: [
-            '0 0 0 0 oklch(0.922 0 0 / 0)',
-            '0 0 0 8px oklch(0.922 0 0 / 0.12)',
-            '0 0 0 0 oklch(0.922 0 0 / 0)',
+            '0 0 0 0 oklch(0.623 0.214 259.815 / 0), 0 0 0 0 oklch(0.623 0.214 259.815 / 0)',
+            '0 0 24px 4px oklch(0.623 0.214 259.815 / 0.2), 0 0 0 2px oklch(0.623 0.214 259.815 / 0.4)',
+            '0 0 0 0 oklch(0.623 0.214 259.815 / 0), 0 0 0 0 oklch(0.623 0.214 259.815 / 0)',
           ],
         }
-        : { boxShadow: '0 0 0 0 oklch(0.922 0 0 / 0)' }"
-      :transition="{ duration: 1.2, repeat: upload.state.value.status === 'dragging' ? Infinity : 0 }"
+        : { boxShadow: '0 0 0 0 oklch(0.623 0.214 259.815 / 0)' }"
+      :transition="{ duration: 1.4, repeat: upload.state.value.status === 'dragging' ? Infinity : 0, ease: 'easeInOut' }"
     >
       <DropOverlay v-if="upload.state.value.status === 'dragging'" />
 
