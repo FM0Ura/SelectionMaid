@@ -24,7 +24,12 @@ const chunkVariants = {
 }
 
 async function copyChunk() {
-  await copy(props.chunk.content)
+  try {
+    await copy(props.chunk.content)
+  } catch {
+    // Clipboard API unavailable or permission denied — optionally show an error toast
+    console.warn('Clipboard copy failed')
+  }
 }
 
 const chunkDownloaded = ref(false)
