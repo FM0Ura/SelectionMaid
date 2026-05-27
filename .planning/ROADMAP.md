@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 Multi-Format Extraction** — Phases 1-7 (shipped 2026-05-25)
-- 🚧 **v2.0 Frontend** — Phases 8-13 (in progress)
+- 🚧 **v2.0 Frontend** — Phases 8-14 (in progress)
 
 ## Phases
 
@@ -19,6 +19,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [x] **Phase 11: Skeleton Loading + Processing Feedback** — Perceived-performance layer for the 1-30 second backend wait (completed 2026-05-26)
 - [x] **Phase 12: Result Display** — Chunk list with Markdown rendering, copy-to-clipboard, and metadata panel (completed 2026-05-26)
 - [x] **Phase 13: Animation + View Transitions** — Stagger reveal, smooth state transitions, and drag-active visual upgrade (completed 2026-05-26)
+- [ ] **Phase 14: Redesign UI with purple/black theme, fix output formatting, and add Markdown download** — Premium purple/black palette, syntax-highlighted Markdown output, and .md download feature
 
 ## Phase Details
 
@@ -149,9 +150,28 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 **UI hint**: yes
 
+### Phase 14: Redesign UI with purple/black theme, fix output formatting, and add Markdown download
+
+**Goal**: The UI ships with a premium purple/black visual identity, all Markdown output is properly formatted with syntax highlighting and scrollable tables, and users can download extracted chunks as a .md file
+
+**Depends on**: Phase 13
+
+**Requirements**: RES-01, RES-03, RES-04
+
+**Plans**: 6 plans
+
+Plans:
+
+- [ ] [14-01-PLAN.md](phases/14-redesign-ui-with-purple-black-theme-fix-output-formatting-an/14-01-PLAN.md) — CSS token redesign + App.vue gradient h1 + DropZone hover purple
+- [ ] [14-02-PLAN.md](phases/14-redesign-ui-with-purple-black-theme-fix-output-formatting-an/14-02-PLAN.md) — Install markdown-it-highlightjs + MarkdownRenderer syntax highlight/table/link upgrades
+- [ ] [14-03-PLAN.md](phases/14-redesign-ui-with-purple-black-theme-fix-output-formatting-an/14-03-PLAN.md) — slugifyFilename utility + formatters tests
+- [ ] [14-04-PLAN.md](phases/14-redesign-ui-with-purple-black-theme-fix-output-formatting-an/14-04-PLAN.md) — ResultView global download button + test fix
+- [ ] [14-05-PLAN.md](phases/14-redesign-ui-with-purple-black-theme-fix-output-formatting-an/14-05-PLAN.md) — ChunkCard glassmorphism + hover glow + per-chunk download button
+- [ ] [14-06-PLAN.md](phases/14-redesign-ui-with-purple-black-theme-fix-output-formatting-an/14-06-PLAN.md) — MetadataCard glassmorphism
+
 ## Progress
 
-**Execution Order:** 8 → 9 → 10 → 11 → 12 → 13
+**Execution Order:** 8 → 9 → 10 → 11 → 12 → 13 → 14
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 | --- | --- | --- | --- | --- |
@@ -160,4 +180,5 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 10. Upload Interaction | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 12. Result Display | v2.0 | 3/3 | Complete | 2026-05-26 |
-| 13. Animation + View Transitions | v2.0 | 2/2 | Complete   | 2026-05-26 |
+| 13. Animation + View Transitions | v2.0 | 2/2 | Complete | 2026-05-26 |
+| 14. Redesign UI + Markdown output fixes + Download | v2.0 | 0/6 | Planning | — |
