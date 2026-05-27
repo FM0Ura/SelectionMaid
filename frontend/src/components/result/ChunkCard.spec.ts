@@ -22,6 +22,11 @@ vi.mock('@vueuse/core', async () => {
   }
 })
 
+vi.stubGlobal('URL', {
+  createObjectURL: vi.fn(() => 'blob:mock'),
+  revokeObjectURL: vi.fn(),
+})
+
 const chunk: Chunk = {
   chunk_id: 'chunk-1',
   content: '# Section\n\nThis is **bold** text.',
@@ -37,6 +42,8 @@ describe('ChunkCard', () => {
   beforeEach(() => {
     copied.value = false
     copy.mockClear()
+    vi.mocked(URL.createObjectURL).mockClear()
+    vi.mocked(URL.revokeObjectURL).mockClear()
   })
 
   it('renders chunk metadata and markdown content', () => {
@@ -57,9 +64,27 @@ describe('ChunkCard', () => {
       props: { chunk },
     })
 
-    await wrapper.get('button').trigger('click')
+    await wrapper.get('[aria-label="Copiar texto do chunk"]').trigger('click')
 
     expect(copy).toHaveBeenCalledWith(chunk.content)
     expect(wrapper.text()).toContain('Copied!')
+  })
+
+  it('renders a download button for the chunk', () => {
+    const wrapper = mount(ChunkCard, {
+      props: { chunk },
+    })
+
+    expect(wrapper.find('[aria-label="Baixar chunk como Markdown"]').exists()).toBe(true)
+  })
+
+  it('shows CheckIcon feedback on chunk download click', async () => {
+    const wrapper = mount(ChunkCard, {
+      props: { chunk },
+    })
+
+    await wrapper.get('[aria-label="Baixar chunk como Markdown"]').trigger('click')
+
+    expect(wrapper.find('[aria-label="Chunk baixado"]').exists()).toBe(true)
   })
 })
