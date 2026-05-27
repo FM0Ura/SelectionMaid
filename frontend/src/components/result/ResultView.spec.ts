@@ -1,7 +1,12 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ExtractionResponse } from '@/types/api'
 import ResultView from './ResultView.vue'
+
+vi.stubGlobal('URL', {
+  createObjectURL: vi.fn(() => 'blob:mock'),
+  revokeObjectURL: vi.fn(),
+})
 
 const data: ExtractionResponse = {
   metadata: {
@@ -62,8 +67,24 @@ describe('ResultView', () => {
       },
     })
 
-    await wrapper.get('button').trigger('click')
+    await wrapper.get('[aria-label="Fazer novo upload"]').trigger('click')
 
     expect(wrapper.emitted('reset')).toHaveLength(1)
+  })
+
+  it('shows download feedback after clicking the Download .MD button', async () => {
+    const wrapper = mount(ResultView, {
+      props: {
+        data,
+        elapsedSeconds: 3,
+      },
+    })
+
+    const downloadBtn = wrapper.find('[aria-label="Baixar todos os chunks como arquivo Markdown"]')
+    expect(downloadBtn.exists()).toBe(true)
+
+    await downloadBtn.trigger('click')
+
+    expect(wrapper.find('[aria-label="Download concluído"]').exists()).toBe(true)
   })
 })
