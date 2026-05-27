@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatDuration, formatFileSize, formatPageRange } from './formatters'
+import { formatDate, formatDuration, formatFileSize, formatPageRange, slugifyFilename } from './formatters'
 
 describe('formatFileSize', () => {
   it('formats bytes using human-readable units', () => {
@@ -27,5 +27,20 @@ describe('formatPageRange', () => {
   it('formats single pages and page intervals', () => {
     expect(formatPageRange(2, 2)).toBe('Pg 2')
     expect(formatPageRange(1, 3)).toBe('Pgs 1-3')
+  })
+})
+
+describe('slugifyFilename', () => {
+  it('strips extension and slugifies ASCII filenames', () => {
+    expect(slugifyFilename('report.pdf')).toBe('report')
+  })
+  it('strips Portuguese diacritics', () => {
+    expect(slugifyFilename('Calendário de Provas 2026.pdf')).toBe('calendario-de-provas-2026')
+  })
+  it('collapses multiple non-alphanumeric chars into a single hyphen', () => {
+    expect(slugifyFilename('my  file--name.docx')).toBe('my-file-name')
+  })
+  it('trims leading and trailing hyphens', () => {
+    expect(slugifyFilename('-bad-name-.pdf')).toBe('bad-name')
   })
 })
