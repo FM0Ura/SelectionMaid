@@ -68,25 +68,25 @@ function handleFiles(files: File[] | null) {
 </script>
 
 <template>
-  <Card class="w-full max-w-2xl overflow-hidden">
+  <Card class="group w-full max-w-2xl overflow-hidden">
     <motion.div
       ref="dropZoneRef"
       data-testid="drop-zone"
       layout
       class="relative flex flex-col items-center justify-center gap-6 text-center transition-colors"
       :class="[
-        upload.state.value.status === 'dragging' ? 'border-primary backdrop-blur-md' : '',
+        upload.state.value.status === 'dragging' ? 'border-purple-600 backdrop-blur-md bg-purple-950/20' : '',
         isProcessing ? 'min-h-48 p-6' : 'min-h-96 p-8',
       ]"
       :animate="upload.state.value.status === 'dragging'
         ? {
           boxShadow: [
-            '0 0 0 0 oklch(0.623 0.214 259.815 / 0), 0 0 0 0 oklch(0.623 0.214 259.815 / 0)',
-            '0 0 24px 4px oklch(0.623 0.214 259.815 / 0.2), 0 0 0 2px oklch(0.623 0.214 259.815 / 0.4)',
-            '0 0 0 0 oklch(0.623 0.214 259.815 / 0), 0 0 0 0 oklch(0.623 0.214 259.815 / 0)',
+            '0 0 0 0 oklch(0.558 0.243 293 / 0), 0 0 0 0 oklch(0.558 0.243 293 / 0)',
+            '0 0 24px 4px oklch(0.558 0.243 293 / 0.2), 0 0 0 2px oklch(0.558 0.243 293 / 0.4)',
+            '0 0 0 0 oklch(0.558 0.243 293 / 0), 0 0 0 0 oklch(0.558 0.243 293 / 0)',
           ],
         }
-        : { boxShadow: '0 0 0 0 oklch(0.623 0.214 259.815 / 0)' }"
+        : { boxShadow: '0 0 0 0 oklch(0.558 0.243 293 / 0)' }"
       :transition="{ duration: 1.4, repeat: upload.state.value.status === 'dragging' ? Infinity : 0, ease: 'easeInOut' }"
     >
       <DropOverlay v-if="upload.state.value.status === 'dragging'" />
@@ -113,8 +113,8 @@ function handleFiles(files: File[] | null) {
       </template>
 
       <template v-else>
-        <div class="flex size-16 items-center justify-center rounded-full border border-border bg-muted">
-          <UploadCloud class="size-8 text-muted-foreground" aria-hidden="true" />
+        <div class="flex size-16 items-center justify-center rounded-full border border-border bg-muted group-hover:border-purple-600">
+          <UploadCloud class="size-8 text-muted-foreground group-hover:text-purple-400" aria-hidden="true" />
         </div>
         <div class="space-y-2">
           <h1 class="text-2xl font-semibold">Envie um documento</h1>

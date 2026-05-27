@@ -22,7 +22,7 @@ const upload = useUpload()
       >
         <section class="w-full max-w-2xl space-y-3 text-center">
           <p class="text-sm font-medium text-muted-foreground">SelectionMaid</p>
-          <h1 class="text-3xl font-semibold leading-tight">Transforme documentos em chunks Markdown</h1>
+          <h1 class="text-3xl font-semibold leading-tight bg-gradient-to-r from-purple-400 to-white bg-clip-text text-transparent">Transforme documentos em chunks Markdown</h1>
         </section>
 
         <DropZone :upload="upload" />
