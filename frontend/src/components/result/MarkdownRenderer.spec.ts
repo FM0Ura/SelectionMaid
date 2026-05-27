@@ -34,4 +34,28 @@ describe('MarkdownRenderer', () => {
 
     expect(wrapper.classes()).toEqual(expect.arrayContaining(['prose', 'prose-invert', 'max-w-none']))
   })
+
+  it('wraps tables in overflow-x-auto div', () => {
+    const wrapper = mount(MarkdownRenderer, {
+      props: { content: '| A | B |\n|---|---|\n| 1 | 2 |' },
+    })
+    expect(wrapper.find('.overflow-x-auto').exists()).toBe(true)
+    expect(wrapper.find('.overflow-x-auto table').exists()).toBe(true)
+  })
+
+  it('adds target=_blank and rel=noopener on links', () => {
+    const wrapper = mount(MarkdownRenderer, {
+      props: { content: '[Link](https://example.com)' },
+    })
+    const anchor = wrapper.find('a')
+    expect(anchor.attributes('target')).toBe('_blank')
+    expect(anchor.attributes('rel')).toBe('noopener noreferrer')
+  })
+
+  it('applies syntax highlight class to fenced code blocks', () => {
+    const wrapper = mount(MarkdownRenderer, {
+      props: { content: '```python\nprint("hello")\n```' },
+    })
+    expect(wrapper.find('code.hljs').exists()).toBe(true)
+  })
 })
