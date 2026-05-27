@@ -43,3 +43,13 @@ export function formatPageRange(pageStart: number, pageEnd: number): string {
 
   return `Pgs ${pageStart}-${pageEnd}`
 }
+
+export function slugifyFilename(filename: string): string {
+  const base = filename.replace(/\.[^.]+$/, '')
+  return base
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
