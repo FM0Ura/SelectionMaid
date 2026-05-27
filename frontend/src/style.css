@@ -53,10 +53,10 @@
   :root {
     --text: #9ca3af;
     --text-h: #f3f4f6;
-    --bg: #16171d;
+    --bg: #111118;
     --border: #2e303a;
     --code-bg: #1f2028;
-    --accent: #c084fc;
+    --accent: #9333ea;
     --accent-bg: rgba(192, 132, 252, 0.15);
     --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
@@ -312,4 +312,33 @@ code {
     right: 0;
     border-right-color: var(--border);
   }
+}
+
+/* Phase 14: hljs background override + custom scrollbar */
+.hljs {
+  background: transparent !important;
+}
+
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.558 0.243 293 / 0.5) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.558 0.243 293 / 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.558 0.243 293 / 0.8);
 }
