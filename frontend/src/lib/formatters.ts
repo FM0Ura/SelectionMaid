@@ -28,6 +28,7 @@ export function formatDuration(seconds: number): string {
 
 export function formatDate(isoString: string): string {
   return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
     year: '2-digit',
     month: '2-digit',
     day: '2-digit',
