@@ -5,6 +5,8 @@ status: draft
 shadcn_initialized: true
 preset: reka-nova / zinc / inter
 created: 2026-05-26
+revised: 2026-05-26
+revision_reason: Fix checker blocking issues — typography sizes, font weights, spacing exception
 ---
 
 # Phase 14 — UI Design Contract
@@ -22,7 +24,7 @@ created: 2026-05-26
 | Preset | reka-nova, baseColor: zinc, cssVariables: true |
 | Component library | reka-ui (via shadcn-vue) |
 | Icon library | lucide-vue-next |
-| Font | Inter (Google Fonts, weights 400/500/600/700) |
+| Font | Inter (Google Fonts, weights 400/600) |
 
 Source: `frontend/components.json`, `frontend/src/assets/index.css`
 
@@ -47,7 +49,7 @@ Declared values (multiples of 4):
 Exceptions:
 - Touch-safe icon-only buttons (download per-chunk, copy button): minimum 32px × 32px hit area (size="sm" in shadcn = h-8 = 32px) — acceptable for desktop-only internal tool.
 - ChunkCard content area: max-h-[400px] — fixed cap, not on the 4px grid.
-- MetadataCard stat cells: p-3 (12px) — Tailwind p-3 aligns to 12px, which is 3×4px, within the scale.
+- MetadataCard stat cells: `px-4 py-2` (16px horizontal, 8px vertical — both in the standard set).
 
 ---
 
@@ -55,10 +57,12 @@ Exceptions:
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Body | 14px (text-sm) | 400 (normal) | 1.5 | Metadata cell values, muted labels, error messages |
-| Label | 12px (text-xs) | 500 (medium) | 1.4 | Chunk counter badge ("Chunk N de M"), metadata dt labels |
-| Heading | 20–24px (text-xl / text-2xl) | 600 (semibold) | 1.25 | ResultView "Chunks extraídos" (text-2xl), MetadataCard title (text-xl), ChunkCard section title (text-base / 16px semibold) |
-| Display | 28–30px (text-3xl) | 600 (semibold) | 1.2 | App `<h1>` "Transforme documentos em chunks Markdown" — receives gradient treatment (see Color section) |
+| Label | 12px (text-xs) | 400 (normal) | 1.4 | Chunk counter badge ("Chunk N de M"), metadata dt labels |
+| Body | 14px (text-sm) | 400 (normal) | 1.5 | Metadata cell values, muted labels, error messages, ChunkCard section sub-labels |
+| Heading | 20px (text-xl) | 600 (semibold) | 1.25 | ResultView "Chunks extraídos", MetadataCard title — use `text-xl font-semibold` throughout |
+| Display | 28px (text-3xl) | 600 (semibold) | 1.2 | App `<h1>` "Transforme documentos em chunks Markdown" — receives gradient treatment (see Color section) |
+
+**Collapsed range note (revision):** The previous spec had a Heading range of 20–24px and a separate ChunkCard section title at 16px. These are now collapsed: all headings use `text-xl` (20px). ChunkCard section labels previously at `text-base` (16px) are reclassified to Body role (`text-sm font-semibold`, 14px 600) — the semibold weight within the Body role is sufficient to establish visual hierarchy without adding an extra size step.
 
 Font family: `Inter, system-ui, sans-serif` — declared via `--font-sans` in `@theme inline`.
 
@@ -80,15 +84,17 @@ The phase replaces the existing neutral dark tokens with purple-tinted equivalen
 | `--background` | `oklch(0.118 0.015 285)` | ~#111118 | App background (D-01) |
 | `--card` | `oklch(0.16 0.018 285 / 0.6)` | ~#1a1b24 at 60% | Card base (glassmorphism base) |
 | `--card-foreground` | `oklch(0.985 0 0)` | #f9fafb | Card text — keep existing |
-| `--primary` | `oklch(0.558 0.243 293)` | ~#9333ea (purple-600) | Accent color — buttons, borders, glows (D-02) |
+| `--primary` | `oklch(0.558 0.243 293)` | ~#9333ea (purple-600) | Brand accent — buttons, borders, glows (D-02) |
 | `--primary-foreground` | `oklch(0.985 0 0)` | white | Text on primary buttons |
 | `--border` | `oklch(0.32 0.06 293 / 0.4)` | ~purple-900/40 | Default border (card borders, ChunkCard divider) (D-03) |
 | `--ring` | `oklch(0.558 0.243 293)` | ~#9333ea | Focus ring |
 | `--destructive` | `oklch(0.628 0.258 27)` | ~#ef4444 | Error states only (D-09) |
 | `--muted` | `oklch(0.18 0.02 285)` | ~#1c1d28 | Muted backgrounds (metadata cells) |
 | `--muted-foreground` | `oklch(0.6 0.03 285)` | ~#9095aa | Secondary text |
-| `--accent` | `oklch(0.22 0.04 293)` | ~purple-950/60 | Table headers, code block backgrounds |
+| `--accent` | `oklch(0.22 0.04 293)` | ~purple-950/60 | Table headers, code block backgrounds (surface only — see note below) |
 | `--accent-foreground` | `oklch(0.88 0.02 285)` | light | Text on accent backgrounds |
+
+**shadcn token nomenclature note:** In shadcn, `--accent` is a **surface background token** (used for hover states on menu items, table headers, code block backgrounds) — it is NOT the brand accent color. The brand accent (purple `#9333ea`) is `--primary`. When implementing, use `--primary` / `text-primary` / `border-primary` for the purple brand color; use `--accent` only as a surface fill for code blocks and table headers.
 
 ### Semantic Color Usage (60/30/10 Split)
 
@@ -230,7 +236,7 @@ Source: D-16, D-17 from 14-CONTEXT.md.
 | Syntax highlight | `markdown-it-highlightjs` plugin, theme: `github-dark` (dark background #0d1117, good contrast) |
 | Table scroll | Wrap rendered `<table>` in `<div class="overflow-x-auto">` via markdown-it renderer override |
 | Table styling | `prose-table:border prose-table:border-purple-900/40 prose-thead:bg-purple-950/60` via Tailwind prose overrides |
-| Links | `markdown-it` configured with `linkTarget: "_blank"` and `rel="noopener noreferrer"` |
+| Links | `markdown-it` configured with `linkTarget: "_blank"` and `rel="noopener noreferrer"` in all rendered links |
 | Chunk body max height | Wrap `<MarkdownRenderer>` in `<div class="max-h-[400px] overflow-y-auto">` inside ChunkCard |
 | Images | `prose img:max-w-full prose img:h-auto` — inherits from prose-invert |
 | Code blocks | `prose-pre:bg-purple-950/60 prose-pre:border prose-pre:border-purple-900/40` |
@@ -325,11 +331,11 @@ Source: D-16, D-20 from 14-CONTEXT.md (inferred from "icon-only" nature implying
 | Global download feedback | Button label changes to "Baixado!" for 1.5s, then reverts to "Download .MD" |
 | Reset / new upload button | "Novo Upload" (no change from existing) |
 | Result view header | "Chunks extraídos" (no change from existing) |
-| Copy button idle | "Copiar" |
-| Copy button feedback | "Copied!" (1.5s) — no change from existing |
+| Copy button idle | "Copiar Markdown" |
+| Copy button feedback | "Copiado!" (1.5s) |
 | Processing state label | "Processando…" |
 
-Source: Existing components (Phases 10–13) + D-16, D-17, D-20, D-21 from 14-CONTEXT.md.
+Source: Existing components (Phases 10–13) + D-16, D-17, D-20, D-21 from 14-CONTEXT.md. Copy button labels updated for Portuguese consistency (revision).
 
 No destructive actions in this phase. No confirmation dialogs required.
 
@@ -357,8 +363,8 @@ No third-party shadcn registries declared. Registry vetting gate: not applicable
 | `frontend/src/style.css` | Update | Replace `--bg: #16171d` with `#111118`; add custom scrollbar CSS; update `--accent` to `#9333ea` |
 | `frontend/src/App.vue` | Update | h1 gradient text classes; bg-background alignment |
 | `frontend/src/components/upload/DropZone.vue` | Update | Idle→hover purple border; drag-active purple (already partial from Phase 13); processing pulse purple |
-| `frontend/src/components/result/ChunkCard.vue` | Update | Glassmorphism classes; hover glow; DownloadIcon button + 1.5s feedback |
-| `frontend/src/components/result/MetadataCard.vue` | Update | Glassmorphism classes (no glow) |
+| `frontend/src/components/result/ChunkCard.vue` | Update | Glassmorphism classes; hover glow; DownloadIcon button + 1.5s feedback; section sub-labels use `text-sm font-semibold` |
+| `frontend/src/components/result/MetadataCard.vue` | Update | Glassmorphism classes (no glow); stat cells use `px-4 py-2` |
 | `frontend/src/components/result/MarkdownRenderer.vue` | Update | markdown-it-highlightjs plugin; table wrapper; prose override classes; link target |
 | `frontend/src/components/result/ResultView.vue` | Update | Global "Download .MD" button in header; download handler function |
 | `frontend/src/lib/formatters.ts` | Update | Add `slugifyFilename()` function |
