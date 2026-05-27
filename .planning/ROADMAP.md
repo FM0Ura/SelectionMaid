@@ -19,7 +19,7 @@ v1.0 archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [x] **Phase 11: Skeleton Loading + Processing Feedback** — Perceived-performance layer for the 1-30 second backend wait (completed 2026-05-26)
 - [x] **Phase 12: Result Display** — Chunk list with Markdown rendering, copy-to-clipboard, and metadata panel (completed 2026-05-26)
 - [x] **Phase 13: Animation + View Transitions** — Stagger reveal, smooth state transitions, and drag-active visual upgrade (completed 2026-05-26)
-- [ ] **Phase 14: Redesign UI with purple/black theme, fix output formatting, and add Markdown download** — Premium purple/black palette, syntax-highlighted Markdown output, and .md download feature
+- [x] **Phase 14: Redesign UI with purple/black theme, fix output formatting, and add Markdown download** — Premium purple/black palette, syntax-highlighted Markdown output, and .md download feature (completed 2026-05-27)
 
 ## Phase Details
 
@@ -181,4 +181,4 @@ Plans:
 | 11. Skeleton Loading + Processing Feedback | v2.0 | 2/2 | Complete | 2026-05-26 |
 | 12. Result Display | v2.0 | 3/3 | Complete | 2026-05-26 |
 | 13. Animation + View Transitions | v2.0 | 2/2 | Complete | 2026-05-26 |
-| 14. Redesign UI + Markdown output fixes + Download | v2.0 | 0/6 | Planning | — |
+| 14. Redesign UI + Markdown output fixes + Download | v2.0 | 6/6 | Complete    | 2026-05-27 |
