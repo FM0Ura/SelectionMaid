@@ -20,7 +20,7 @@ const displayType = computed(() => props.metadata.doc_type.toUpperCase())
     layout-id="metadata-card"
     :transition="{ type: 'spring', stiffness: 260, damping: 30 }"
   >
-    <Card class="w-full p-5">
+    <Card class="w-full p-5 bg-white/5 backdrop-blur-md border border-purple-900/40">
       <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0 space-y-2">
           <div class="flex items-center gap-2 text-sm text-muted-foreground">
