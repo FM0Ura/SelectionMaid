@@ -21,11 +21,13 @@ const downloaded = ref(false)
 
 function buildMarkdownContent(data: ExtractionResponse): string {
   const meta = data.metadata
+  const safeScalar = (s: string) => s.replace(/[\r\n]/g, ' ')
+  const safeComment = (s: string) => s.replace(/-->/g, '--\\>')
   const frontmatter = [
     '---',
-    `title: ${meta.title || meta.source_filename}`,
-    `language: ${meta.language}`,
-    `doc_type: ${meta.doc_type}`,
+    `title: ${safeScalar(meta.title || meta.source_filename)}`,
+    `language: ${safeScalar(meta.language)}`,
+    `doc_type: ${safeScalar(meta.doc_type)}`,
     `ingested_at: ${meta.ingested_at}`,
     `chunk_count: ${meta.chunk_count}`,
     '---',
@@ -34,7 +36,7 @@ function buildMarkdownContent(data: ExtractionResponse): string {
 
   const chunks = data.chunks.map((chunk, i) => [
     `# Chunk ${i + 1}`,
-    `<!-- pages: ${chunk.page_start}-${chunk.page_end} | words: ${chunk.word_count} | section: ${chunk.section_title} -->`,
+    `<!-- pages: ${chunk.page_start}-${chunk.page_end} | words: ${chunk.word_count} | section: ${safeComment(chunk.section_title ?? '')} -->`,
     '',
     chunk.content,
     '',
