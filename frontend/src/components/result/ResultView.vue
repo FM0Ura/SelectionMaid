@@ -72,7 +72,7 @@ const chunkListVariants = {
 </script>
 
 <template>
-  <section class="w-full max-w-4xl space-y-5" aria-label="Resultado da extração">
+  <section class="w-full max-w-4xl mx-auto space-y-5" aria-label="Resultado da extração">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="space-y-1">
         <p class="text-sm font-medium text-muted-foreground">SelectionMaid</p>
