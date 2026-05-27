@@ -87,7 +87,7 @@ describe('App', () => {
     uploadState.value = { status: 'success', data: extractionResponse }
     const wrapper = mount(App)
 
-    await wrapper.get('button').trigger('click')
+    await wrapper.get('[aria-label="Fazer novo upload"]').trigger('click')
 
     expect(reset).toHaveBeenCalled()
   })
