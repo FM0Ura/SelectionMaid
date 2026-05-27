@@ -53,8 +53,10 @@ function downloadAll(data: ExtractionResponse): void {
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = filename
+  document.body.appendChild(anchor)
   anchor.click()
-  URL.revokeObjectURL(url)
+  document.body.removeChild(anchor)
+  setTimeout(() => URL.revokeObjectURL(url), 0)
   downloaded.value = true
   setTimeout(() => { downloaded.value = false }, 1500)
 }

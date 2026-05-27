@@ -39,8 +39,10 @@ function downloadChunk(): void {
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = filename
+  document.body.appendChild(anchor)
   anchor.click()
-  URL.revokeObjectURL(url)
+  document.body.removeChild(anchor)
+  setTimeout(() => URL.revokeObjectURL(url), 0)
   chunkDownloaded.value = true
   setTimeout(() => {
     chunkDownloaded.value = false
