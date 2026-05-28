@@ -58,7 +58,12 @@ blocked: 0
   reason: "User reported: src/selection_maid/adapters/http/router.py:30: error: Library stubs not installed for 'psutil' [import-untyped]. Found 1 error in 1 file (checked 21 source files)"
   severity: major
   test: 6
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "psutil is a runtime dependency in pyproject.toml but types-psutil (its mypy stub package) was never added to the dev dependency group. mypy --strict requires stubs or inline types for all third-party imports."
+  artifacts:
+    - path: "pyproject.toml"
+      issue: "types-psutil missing from [dependency-groups.dev]"
+    - path: "src/selection_maid/adapters/http/router.py"
+      issue: "imports psutil at line 30; used at line 110 via psutil.Process()"
+  missing:
+    - "Run: uv add --dev types-psutil"
   debug_session: ""

@@ -174,7 +174,7 @@ def maid_error_handler(request, exc: SelectionMaidError):
 | A2| `python-magic` is preferred over `filetype` | Tech Stack | `libmagic` system dependency might complicate deployment. |
 | A3| `importlib.metadata.version` works in dev | Summary | Might return error if package is not installed via `uv`. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact timeout for Docling:** Should we implement an explicit timeout in the router for v1? 
    - *Recommendation:* Postpone to Phase 7 integration testing; use 504 for domain timeout errors.

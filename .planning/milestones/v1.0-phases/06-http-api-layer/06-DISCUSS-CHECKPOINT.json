@@ -1,0 +1,40 @@
+{
+  "phase": "6",
+  "phase_name": "HTTP API Layer",
+  "checkpoint_version": "1.0",
+  "areas_completed": ["Response schema", "Error mapping"],
+  "areas_remaining": ["File validation", "App wiring & lifespan"],
+  "decisions": {
+    "response_schema": [
+      "ExtractionResponse has metadata: MetadataSchema and chunks: list[ChunkSchema] — 1-to-1 mirror of domain models",
+      "Add processing_time_ms at top level of ExtractionResponse",
+      "HealthResponse shape: {status: str, rss_mb: float}",
+      "Pydantic schemas live in adapters/http/schemas.py"
+    ],
+    "error_mapping": [
+      "UnsupportedFormatError -> 415, ExtractionTimeoutError -> 504, ExtractionError/FilterError/ChunkingError/EnrichmentError -> 422, validation errors -> 413/415/422 as appropriate",
+      "Error response body: {error_code: str, message: str} — no cause/stack trace exposed",
+      "Validation errors (pre-domain) use same {error_code, message} shape with VAL-* codes (VAL-001 size, VAL-002 MIME, VAL-003 magic bytes)"
+    ]
+  },
+  "deferred": [],
+  "discussion_log": [
+    {
+      "area": "Response schema",
+      "questions": [
+        {"question": "How should ExtractionResponse nest DocumentMetadata and DocumentChunk?", "selected": "Exactly mirror domain models"},
+        {"question": "Should ExtractionResponse include a top-level status or processing_time_ms field?", "selected": "Add processing_time_ms"},
+        {"question": "How should HealthResponse look for GET /health?", "selected": "{status: ok, rss_mb: float}"},
+        {"question": "Where should Pydantic response schemas live?", "selected": "adapters/http/schemas.py"}
+      ]
+    },
+    {
+      "area": "Error mapping",
+      "questions": [
+        {"question": "How should SelectionMaid domain errors map to HTTP status codes?", "selected": "Standard semantics"},
+        {"question": "What should error response bodies look like?", "selected": "{error_code, message}"},
+        {"question": "How should validation errors from file checks be structured?", "selected": "Same {error_code, message} shape with VAL-* codes"}
+      ]
+    }
+  ]
+}
