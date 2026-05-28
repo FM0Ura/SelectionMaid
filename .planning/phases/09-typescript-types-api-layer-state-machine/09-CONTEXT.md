@@ -19,7 +19,7 @@ Esta fase entrega a infraestrutura de comunicação e gerenciamento de estado do
 
 ### Mapeamento de Erros e Timeout
 - **D-03:** Utilitário central de erros em `src/api/errors.ts` para mapear status codes e exceções para mensagens amigáveis.
-- **D-04:** Mensagens de timeout detalhadas (PROC-03) informando o limite de 120s e sugerindo re-tentativa para documentos complexos.
+- **D-04:** Mensagens de timeout detalhadas (PROC-03) informando o limite de 130s e sugerindo re-tentativa para documentos complexos.
 
 ### Máquina de Estados (State Machine)
 - **D-05:** Implementação via **Discriminated Union** para evitar estados impossíveis.

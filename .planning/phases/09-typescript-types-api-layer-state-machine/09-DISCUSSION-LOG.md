@@ -47,7 +47,7 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | Mensagem Genérica | Um erro genérico de timeout ("Servidor demorou demais"). | |
-| Mensagem Detalhada (PROC-03) | Informa que o processamento é pesado e sugere tentar novamente ("O documento é complexo e o tempo limite de 120s foi atingido"). | ✓ |
+| Mensagem Detalhada (PROC-03) | Informa que o processamento é pesado e sugere tentar novamente ("O documento é complexo e o tempo limite de 130s foi atingido"). | ✓ |
 
 **User's choice:** Mensagem Detalhada (PROC-03)
 

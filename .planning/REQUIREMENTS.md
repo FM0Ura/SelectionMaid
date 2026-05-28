@@ -20,10 +20,10 @@
 
 ### Result Display
 
-- [ ] **RES-01**: Usuário vê os chunks do documento renderizados como Markdown (não texto raw)
+- [x] **RES-01**: Usuário vê os chunks do documento renderizados como Markdown (não texto raw)
 - [x] **RES-02**: Usuário vê os chunks revelados com stagger animation em sequência após a resposta chegar
-- [ ] **RES-03**: Usuário pode copiar o texto de cada chunk individualmente com um botão de copy-to-clipboard
-- [ ] **RES-04**: Usuário vê painel de metadados com tipo de documento, idioma, título inferido e tempo de processamento
+- [x] **RES-03**: Usuário pode copiar o texto de cada chunk individualmente com um botão de copy-to-clipboard
+- [x] **RES-04**: Usuário vê painel de metadados com tipo de documento, idioma, título inferido e tempo de processamento
 
 ### Navigation & Polish
 
@@ -81,9 +81,9 @@
 | NAV-02 | Phase 10 | Pending |
 | NAV-03 | Phase 10 | Pending |
 | PROC-02 | Phase 11 | Pending |
-| RES-01 | Phase 12 | Pending |
-| RES-03 | Phase 12 | Pending |
-| RES-04 | Phase 12 | Pending |
+| RES-01 | Phase 12 | Complete |
+| RES-03 | Phase 12 | Complete |
+| RES-04 | Phase 12 | Complete |
 | RES-02 | Phase 13 | Complete |
 | NAV-01 | Phase 13 | Complete |
 

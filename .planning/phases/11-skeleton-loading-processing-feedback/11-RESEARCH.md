@@ -4,6 +4,36 @@
 **Domain:** Frontend (Vue 3, Tailwind CSS v4, Motion-v)
 **Confidence:** HIGH
 
+<user_constraints>
+## User Constraints (from CONTEXT.md)
+
+### Locked Decisions
+- **D-01: Minimização do Card.** Ao iniciar o processamento, o Card de upload deve "subir" ou diminuir de tamanho para abrir espaço para a lista de skeletons abaixo.
+- **D-02: Cards Atômicos.** Em vez de um bloco único, o placeholder deve consistir em 3-5 skeletons em formato de "card", simulando a estrutura de múltiplos chunks.
+- **D-03: Animação Shimmer.** Uso de um gradiente linear animado (sweeping gradient) via Motion-v ou CSS keyframes para comunicar processamento ativo.
+- **D-04: Contador Proeminente.** O tempo decorrido deve ser exibido de forma central e clara (ex: "Processando... 00:12").
+- **D-05: Precisão.** O contador deve atualizar a cada segundo enquanto o status for `processing`.
+
+### the agent's Discretion
+- Estilo exato do shimmer (velocidade, ângulo do gradiente).
+- Número exato de skeletons mostrados (3 a 5 conforme melhor se ajuste ao layout).
+- Micro-interação de "minimizar" o card de upload.
+
+### Deferred Ideas (OUT OF SCOPE)
+- Renderização real do Markdown (Phase 12).
+- Animação de revelação "staggered" após o sucesso (Phase 13).
+</user_constraints>
+
+<phase_requirements>
+## Phase Requirements
+
+| ID | Description | Research Support |
+|----|-------------|------------------|
+| PROC-02 | Skeleton shimmer placeholders | Documented Tailwind v4 `@theme` implementation for shimmer. |
+| UI-TIMER | Continuous processing feedback | Implemented `useIntervalFn` logic for `useUpload.ts`. |
+| UI-MINIMIZE | Layout transition to processing state | Verified `motion-v` layout prop for height transitions. |
+</phase_requirements>
+
 ## Summary
 
 This phase focuses on improving perceived performance during the "processing" state of document ingestion. We will transition the UI from a large drop zone to a compact "processing" card, accompanied by a list of animated skeleton placeholders representing the chunks being generated. A prominent elapsed timer will provide continuous feedback that the system is active.
