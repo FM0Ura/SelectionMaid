@@ -8,9 +8,14 @@ structured Markdown chunks ready for a vector database. Every stage is
 implemented as an interchangeable adapter — the domain core holds zero
 references to infrastructure libraries.
 
+A completely separate **Vue 3 SPA** frontend (`frontend/`) provides a
+browser-based interface. The SPA is a static application that communicates
+with the backend exclusively over HTTP — it is not imported by, compiled
+with, or otherwise coupled to the Python backend.
+
 ## System Overview
 
-The service accepts a single file per request via its HTTP input adapter,
+The backend accepts a single file per request via its HTTP input adapter,
 runs it through the `extract → filter → chunk → enrich` pipeline, and
 returns an `ExtractionResponse` containing enriched document metadata and an
 ordered list of `DocumentChunk` objects. All pipeline stages communicate
@@ -19,36 +24,65 @@ library-specific type into the domain core. The primary deployment target is
 a single-process FastAPI/uvicorn server suitable for low-traffic, on-demand
 document ingestion.
 
+The frontend SPA runs in the browser and communicates with the backend
+through a single endpoint (`POST /ingest`). During development, Vite's dev
+server proxies `/api/*` requests to `http://localhost:8000`, stripping the
+`/api` prefix before forwarding. In production the SPA is served as a static
+build; the backend must be reachable at the same origin or configured via a
+reverse proxy. CORS is enabled on the backend for `http://localhost:5173`
+(the Vite dev server origin).
+
 ## Component Diagram
 
-```
-                      ┌─────────────────────────────────────┐
-                      │          HTTP Adapter (FastAPI)      │
-                      │  POST /ingest      GET /health       │
-                      │  3-layer validation                  │
-                      │  run_in_threadpool (CPU offload)     │
-                      └────────────────┬────────────────────┘
-                                       │ RawInput
-                                       ▼
-                      ┌─────────────────────────────────────┐
-                      │         ExtractionService            │
-                      │    (application / orchestration)     │
-                      │  extract → filter → chunk → enrich  │
-                      └──┬──────────┬──────────┬──────────┬─┘
-               RawInput  │          │RawDoc    │content   │raw+chunks
-                         ▼          ▼          ▼          ▼
-               ┌──────────┐  ┌──────────┐ ┌──────────┐ ┌──────────┐
-               │ Extractor │  │  Filter  │ │ Chunker  │ │ Enricher │
-               │  (Port)   │  │  (Port)  │ │  (Port)  │ │  (Port)  │
-               └─────┬─────┘  └─────┬────┘ └─────┬────┘ └─────┬────┘
-                     │              │             │             │
-               DoclingAdapter  HeuristicFilter  Markdown-   Metadata-
-               (Docling lib)   (stdlib only)    Chunker     Enricher
-                                               (tiktoken)  (langdetect)
+```text
+  Browser
+  ┌────────────────────────────────────────────────────────────┐
+  │                    Vue 3 SPA (frontend/)                   │
+  │                                                            │
+  │  App.vue                                                   │
+  │   └─ useUpload (composable — discriminated union FSM)      │
+  │       ├─ DropZone ──── drag/drop + file picker             │
+  │       │   ├─ ProcessingCard (spinner + elapsed timer)      │
+  │       │   ├─ ErrorBanner                                   │
+  │       │   └─ DropOverlay                                   │
+  │       └─ ResultView ── success screen                      │
+  │           ├─ MetadataCard (doc metadata summary)           │
+  │           └─ ChunkCard × N (copy + per-chunk download)     │
+  │               └─ MarkdownRenderer (markdown-it + DOMPurify)│
+  │                                                            │
+  │  src/api/ingest.ts ──── fetch POST /api/ingest             │
+  │  src/types/api.ts  ──── TypeScript types mirroring backend │
+  └───────────────────────────┬────────────────────────────────┘
+                              │ HTTP  (JSON response)
+                    Vite proxy /api → :8000 (dev)
+                              │
+  ┌───────────────────────────▼────────────────────────────────┐
+  │                  HTTP Adapter (FastAPI)                     │
+  │   POST /ingest              GET /health                    │
+  │   3-layer validation        CORS: localhost:5173           │
+  │   run_in_threadpool (CPU offload)                          │
+  └───────────────────────────┬────────────────────────────────┘
+                              │ RawInput
+                              ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                   ExtractionService                         │
+  │             (application / orchestration)                   │
+  │         extract → filter → chunk → enrich                  │
+  └──┬──────────┬──────────┬──────────┬──────────────────────┘
+     │          │          │          │
+     ▼          ▼          ▼          ▼
+  ┌──────────┐  ┌──────────┐ ┌──────────┐ ┌──────────┐
+  │Extractor │  │  Filter  │ │ Chunker  │ │ Enricher │
+  │  (Port)  │  │  (Port)  │ │  (Port)  │ │  (Port)  │
+  └─────┬────┘  └─────┬────┘ └─────┬────┘ └─────┬────┘
+        │             │            │             │
+  DoclingAdapter  Heuristic-   Markdown-   Metadata-
+  (Docling lib)   Filter       Chunker     Enricher
+                  (stdlib)     (tiktoken)  (langdetect)
 ```
 
-Arrows indicate data flow direction (caller → callee). Each box below
-`ExtractionService` is a concrete adapter injected at startup.
+Arrows indicate data flow direction (caller → callee). Each adapter below
+`ExtractionService` is a concrete implementation injected at startup.
 
 ## Data Flow
 
@@ -103,7 +137,7 @@ A typical request follows this path:
 ## Key Abstractions
 
 | Abstraction | File | Description |
-|---|---|---|
+| --- | --- | --- |
 | `ExtractorPort` | `domain/ports.py` | Protocol: `extract(RawInput) -> RawDocument` |
 | `FilterPort` | `domain/ports.py` | Protocol: `filter(RawDocument) -> RawDocument` |
 | `ChunkerPort` | `domain/ports.py` | Protocol: `chunk(str) -> list[DocumentChunk]` |
@@ -128,7 +162,7 @@ adapter maps error codes to HTTP status via `ERROR_CODE_TO_HTTP`
 wrapped by `ExtractionService` before they reach any caller.
 
 | Code | Class | HTTP Status | When Raised |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `EXT-001` | `ExtractionError` | 500 | Generic Docling conversion failure |
 | `EXT-002` | `UnsupportedFormatError` | 415 | MIME type not in `SUPPORTED_MIME_TYPES` |
 | `EXT-003` | `ExtractionTimeoutError` | 504 | Conversion exceeded 120-second timeout |
@@ -140,28 +174,51 @@ wrapped by `ExtractionService` before they reach any caller.
 
 ## Directory Structure Rationale
 
-```
-src/selection_maid/
-├── domain/             # Pure domain — zero third-party imports
-│   ├── models.py       # Frozen dataclasses (value objects)
-│   └── ports.py        # Protocol definitions (port contracts)
-├── adapters/           # All infrastructure implementations
-│   ├── extractor/
-│   │   └── docling.py  # DoclingAdapter — only place Docling is imported at runtime
-│   ├── filter/
-│   │   └── heuristic.py # HeuristicFilter — stdlib only
-│   ├── chunker/
-│   │   └── markdown.py  # MarkdownChunker — tiktoken
-│   ├── enricher/
-│   │   └── default.py   # MetadataEnricher — langdetect
-│   └── http/
-│       ├── app.py        # FastAPI app factory + asynccontextmanager lifespan
-│       ├── router.py     # build_router() closure; GET /health + POST /ingest
-│       ├── schemas.py    # Pydantic v2 response schemas
-│       └── error_map.py  # ERROR_CODE_TO_HTTP mapping
-├── errors.py           # SelectionMaidError hierarchy
-├── service.py          # ExtractionService — pipeline orchestration
-└── config.py           # get_config(); reads config.toml; never raises on missing file
+```text
+SelectionMaid/
+├── src/selection_maid/         # Python backend (hexagonal architecture)
+│   ├── domain/                 # Pure domain — zero third-party imports
+│   │   ├── models.py           # Frozen dataclasses (value objects)
+│   │   └── ports.py            # Protocol definitions (port contracts)
+│   ├── adapters/               # All infrastructure implementations
+│   │   ├── extractor/
+│   │   │   └── docling.py      # DoclingAdapter — only place Docling is imported at runtime
+│   │   ├── filter/
+│   │   │   └── heuristic.py    # HeuristicFilter — stdlib only
+│   │   ├── chunker/
+│   │   │   └── markdown.py     # MarkdownChunker — tiktoken
+│   │   ├── enricher/
+│   │   │   └── default.py      # MetadataEnricher — langdetect
+│   │   └── http/
+│   │       ├── app.py          # FastAPI app factory + asynccontextmanager lifespan
+│   │       ├── router.py       # build_router() closure; GET /health + POST /ingest
+│   │       ├── schemas.py      # Pydantic v2 response schemas
+│   │       └── error_map.py    # ERROR_CODE_TO_HTTP mapping
+│   ├── errors.py               # SelectionMaidError hierarchy
+│   ├── service.py              # ExtractionService — pipeline orchestration
+│   └── config.py               # get_config(); reads config.toml; never raises on missing file
+│
+├── frontend/                   # Vue 3 SPA — completely decoupled from backend
+│   ├── src/
+│   │   ├── types/
+│   │   │   └── api.ts          # TypeScript types mirroring backend JSON schema
+│   │   ├── api/
+│   │   │   ├── ingest.ts       # postIngest() — fetch wrapper with 130s AbortSignal
+│   │   │   └── errors.ts       # ApiResponseError class + mapApiError()
+│   │   ├── composables/
+│   │   │   └── useUpload.ts    # Discriminated-union state machine (FSM)
+│   │   ├── components/
+│   │   │   ├── upload/         # DropZone, ProcessingCard, SkeletonChunk, ErrorBanner, DropOverlay
+│   │   │   └── result/         # ResultView, MetadataCard, ChunkCard, MarkdownRenderer
+│   │   ├── lib/
+│   │   │   ├── formatters.ts   # formatDate, formatDuration, slugifyFilename, formatPageRange
+│   │   │   └── validators.ts   # validateFile — client-side pre-upload checks
+│   │   ├── App.vue             # Root component — AnimatePresence view transitions
+│   │   └── main.ts             # Vue app bootstrap
+│   └── vite.config.ts          # Dev proxy: /api → http://localhost:8000
+│
+├── tests/                      # Backend test suite (pytest)
+└── config.toml                 # Backend runtime configuration
 ```
 
 **Design principles reflected in this layout:**
@@ -179,17 +236,20 @@ src/selection_maid/
   preventing torch model loading on import of any other module.
 - `config.py` uses `tomllib` (stdlib, Python 3.11+) to read `config.toml`.
   Missing files and missing keys silently fall back to hardcoded defaults (D-38).
+- `frontend/` is a fully independent Node.js project (`package.json`, `vite.config.ts`).
+  It shares no build tooling, no runtime, and no import graph with the Python backend.
+  The only contract between them is the JSON shape returned by `POST /ingest`.
 
 ## Adapter Wiring (Startup Sequence)
 
 The `_lifespan` context manager in `adapters/http/app.py` performs all
 one-time initialisation in this order:
 
-```
+```text
 1. Record app.state.start_time (UTC) for /health uptime
 2. Import and construct DocumentConverter (triggers Docling/torch model loading)
 3. Call get_config() → GlobalConfig
-4. build_docling_adapter(converter)   → DoclingAdapter
+4. build_docling_adapter(converter)    → DoclingAdapter
 5. build_heuristic_filter(config.filter) → HeuristicFilter
 6. build_markdown_chunker(config.chunker) → MarkdownChunker
 7. build_metadata_enricher(config.enricher) → MetadataEnricher
@@ -203,9 +263,89 @@ The `DocumentConverter` singleton is shared across all requests. A
 because `DocumentConverter` mutates internal model state and is not
 thread-safe.
 
+## Frontend Architecture
+
+The Vue 3 SPA is a single-page application with no server-side rendering.
+Its internal design follows a layered pattern: types → API layer →
+composable state machine → components.
+
+### Type Contract (`src/types/api.ts`)
+
+All TypeScript interfaces in `src/types/api.ts` mirror the backend's Pydantic
+schemas exactly. This file is the single source of truth for the frontend's
+understanding of the API contract:
+
+- `Chunk` — mirrors `DocumentChunk` (8 fields: `chunk_id`, `content`,
+  `page_start`, `page_end`, `section_title`, `chunk_index`, `total_chunks`,
+  `word_count`)
+- `DocumentMetadata` — mirrors `DocumentMetadata` (9 fields)
+- `ExtractionResponse` — top-level response: `{ metadata, chunks }`
+- `UploadState` — discriminated union used by the state machine (see below)
+
+### API Layer (`src/api/ingest.ts`, `src/api/errors.ts`)
+
+`postIngest(file: File): Promise<ExtractionResponse>` is the single function
+that calls the backend. It:
+
+- Constructs a `FormData` and `POST`s to `/api/ingest` via native `fetch`
+- Attaches `AbortSignal.timeout(130_000)` — matches the backend's 120-second
+  extraction timeout plus a buffer
+- On a non-2xx response, parses the error body and throws `ApiResponseError`
+  (carrying `status` and optional `code`)
+
+`mapApiError(error)` in `src/api/errors.ts` translates any thrown value into a
+user-facing Portuguese string, with specific messages for HTTP 413, 415, 422,
+504, and `AbortError` (timeout).
+
+### State Machine (`src/composables/useUpload.ts`)
+
+`useUpload()` is the central composable. It owns all upload state as a single
+`ref<UploadState>` whose type is a discriminated union:
+
+| Status | Shape | When |
+| --- | --- | --- |
+| `idle` | `{ status: 'idle' }` | Initial state and after reset |
+| `dragging` | `{ status: 'dragging' }` | File dragged over the drop zone |
+| `uploading` | `{ status: 'uploading'; progress: number }` | `fetch` initiated (brief — transitions immediately to `processing`) |
+| `processing` | `{ status: 'processing' }` | Awaiting the backend response; elapsed timer ticking |
+| `success` | `{ status: 'success'; data: ExtractionResponse }` | Response received |
+| `error` | `{ status: 'error'; message: string; code?: string }` | Validation failure or API error |
+
+A `useIntervalFn` (VueUse) drives the elapsed-seconds counter while status
+is `processing`. The composable also runs `validateFile()` (from
+`src/lib/validators.ts`) before initiating any network call, catching
+client-side errors (wrong MIME type, multiple files) without a round trip.
+
+### Component Tree
+
+```text
+App.vue  (AnimatePresence — cross-fades between upload and result views)
+├─ DropZone.vue           drag-drop zone + file input button
+│   ├─ DropOverlay.vue    full-area overlay shown during drag
+│   ├─ ProcessingCard.vue spinner + elapsed timer (uploading / processing states)
+│   ├─ SkeletonChunk.vue  shimmer skeleton placeholders (processing state; rendered in App.vue)
+│   └─ ErrorBanner.vue    inline error with retry action
+└─ ResultView.vue         success view; download-all button
+    ├─ MetadataCard.vue   document summary: type, language, pages, chunks, timing
+    └─ ChunkCard.vue × N  per-chunk: copy-to-clipboard + individual Markdown download
+        └─ MarkdownRenderer.vue  markdown-it + DOMPurify + highlight.js
+```
+
+- **Animations** — `motion-v` v2.2 (Motion for Vue) handles all transitions:
+  `AnimatePresence` for view-level cross-fades in `App.vue`, spring-physics
+  `layout-id` shared element transition between `ProcessingCard` and
+  `MetadataCard`, and staggered `ChunkCard` reveal on the result screen.
+- **UI primitives** — shadcn-vue components (`Card`, `Button`, `Skeleton`) with
+  a purple/black dark theme using OKLCH color tokens via Tailwind CSS v4.
+- **Markdown rendering** — `MarkdownRenderer.vue` uses a module-scope
+  `MarkdownIt` instance (not recreated per render), applies `highlight.js`
+  syntax highlighting, forces `target="_blank" rel="noopener noreferrer"` on
+  all links, wraps tables in `overflow-x-auto`, and sanitises the final HTML
+  with `DOMPurify`.
+
 ## Uvicorn Entry Point
 
-```
+```bash
 uvicorn selection_maid.adapters.http.app:app
 ```
 

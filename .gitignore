@@ -8,6 +8,9 @@ __pycache__/
 venv/
 env/
 
+# Vs Code config
+frontend/.vscode
+
 # Distribution / packaging
 *.egg-info/
 dist/

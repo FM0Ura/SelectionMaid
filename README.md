@@ -19,6 +19,7 @@ The service is built on a **hexagonal (Ports & Adapters) architecture**: every a
 - Metadata enrichment: language detection (ISO 639-1), doc type classification, page count, ingestion timestamp
 - Asynchronous FastAPI service — Docling processing offloaded to thread executor so the event loop is never blocked
 - Configuration via optional `config.toml`; all keys fall back to hardcoded defaults
+- **v2.0** Vue 3 SPA with drag-and-drop upload, syntax-highlighted Markdown output, and `.md` download
 
 ---
 
@@ -39,6 +40,51 @@ uv run uvicorn selection_maid.adapters.http.app:app --reload
 ```
 
 The service starts on `http://127.0.0.1:8000` by default. Interactive API docs are available at `http://127.0.0.1:8000/docs`.
+
+---
+
+## Frontend / Web UI
+
+**v2.0 feature.** SelectionMaid ships a Vue 3 SPA that provides a visual interface for document ingestion.
+
+**Additional prerequisites:** Node.js 18+ and npm.
+
+```bash
+# Install frontend dependencies
+cd frontend
+npm install
+
+# Start the development server
+npm run dev
+```
+
+The frontend starts on `http://localhost:5173`. It proxies `/api/*` requests to the backend at `http://localhost:8000`, so both processes must be running simultaneously.
+
+**To use the full stack, run both concurrently:**
+
+```bash
+# Terminal 1 — backend
+uv run uvicorn selection_maid.adapters.http.app:app --reload
+
+# Terminal 2 — frontend
+cd frontend && npm run dev
+```
+
+**Features:**
+
+- Drag-and-drop or click-to-upload for PDF, DOCX, and HTML files
+- Skeleton loading while Docling processes the document
+- Chunk result display with syntax-highlighted Markdown rendering
+- Copy individual chunks to clipboard
+- Download the full result as a `.md` file
+- Purple/black premium theme with stagger animations
+
+**Build for production:**
+
+```bash
+cd frontend
+npm run build   # outputs to frontend/dist/
+```
 
 ---
 
@@ -163,6 +209,16 @@ src/selection_maid/
 ├── service.py           # ExtractionService — orchestrates extract → filter → chunk → enrich
 ├── config.py            # get_config() — reads config.toml, falls back to defaults
 └── errors.py            # Domain error taxonomy (SelectionMaidError subclasses)
+
+frontend/                # Vue 3 SPA (v2.0)
+├── src/
+│   ├── api/             # fetch wrappers: ingest.ts, error handling
+│   ├── components/
+│   │   ├── upload/      # DropZone, DropOverlay, SkeletonChunk, ErrorBanner, ProcessingCard
+│   │   └── result/      # ResultView, ChunkCard, MarkdownRenderer, MetadataCard
+│   ├── composables/     # useUpload — upload state machine
+│   └── App.vue          # Root component; orchestrates upload → result views
+└── vite.config.ts       # Dev server on :5173; proxies /api/* → http://localhost:8000
 ```
 
 ### Pipeline
@@ -205,6 +261,14 @@ uv run pytest tests/domain/test_service.py
 ```
 
 Test fixtures (minimal PDF, DOCX, HTML) live in `tests/fixtures/`.
+
+**Frontend tests:**
+
+```bash
+cd frontend
+npm run test:unit   # Vitest unit tests
+npm run test:ui     # Vitest with browser UI
+```
 
 ---
 

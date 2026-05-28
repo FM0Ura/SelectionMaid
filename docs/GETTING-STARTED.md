@@ -11,6 +11,7 @@ This guide takes you from a fresh clone to a running SelectionMaid instance and 
 |-------------|---------|-------|
 | Python | `>=3.13` | Set in `pyproject.toml` `requires-python` |
 | uv | latest | Dependency manager, venv, and lockfile — see [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
+| Node.js | `>=18` | Required for the Vue 3 frontend only — omit if using the API directly |
 
 uv manages the Python version and virtual environment automatically. You do not need to create a venv manually.
 
@@ -56,6 +57,24 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 > **Note:** Docling's AI models (DocLayNet, TableFormer) load during startup. The first launch may take 30–60 seconds while model weights are downloaded and cached.
 
 The `--reload` flag watches source files for changes and restarts the server automatically. Omit it in production.
+
+---
+
+## Start the web UI (optional)
+
+SelectionMaid includes a Vue 3 SPA that provides a browser-based interface for uploading documents and viewing results. The backend must be running before starting the frontend.
+
+In a separate terminal, install frontend dependencies and start the dev server:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The UI is available at <http://localhost:5173>.
+
+> **Both services must be running** for the full experience: the backend on port 8000 handles document processing; the frontend on port 5173 serves the web interface. The backend CORS configuration already allows requests from `localhost:5173`.
 
 ---
 
@@ -121,6 +140,10 @@ uv run uvicorn selection_maid.adapters.http.app:app --reload --port 8001
 **`config.toml` not found warning at startup**
 
 This is expected — `config.toml` is optional. The application uses hardcoded defaults when the file is absent. To customise behaviour, create `config.toml` at the project root. See [CONFIGURATION.md](CONFIGURATION.md) for all available keys.
+
+**Frontend `npm install` fails**
+
+Ensure Node.js 18 or higher is installed (`node --version`). The frontend has no dependency on Python or uv — it installs and runs independently from the `frontend/` directory.
 
 ---
 

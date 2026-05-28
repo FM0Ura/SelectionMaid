@@ -1,9 +1,9 @@
 <!-- generated-by: gsd-doc-writer -->
 # Testing
 
-SelectionMaid uses pytest with pytest-asyncio. Tests are organised by architectural layer and split into unit tests (no Docling model loading) and integration tests (real `DocumentConverter`, slow-marked).
+SelectionMaid has two independent test suites: a Python backend suite using pytest with pytest-asyncio, and a TypeScript frontend suite using Vitest. Both are organised by architectural layer. Backend tests are split into unit tests (no Docling model loading) and integration tests (real `DocumentConverter`, slow-marked).
 
-## Test Framework and Setup
+## Backend: Test Framework and Setup
 
 | Tool | Version | Role |
 |------|---------|------|
@@ -21,7 +21,7 @@ uv sync
 
 `asyncio_mode = "auto"` is set in `pyproject.toml`, so every `async def` test function runs automatically without a `@pytest.mark.asyncio` decorator.
 
-## Running Tests
+## Backend: Running Tests
 
 ```bash
 # Full test suite
@@ -42,9 +42,9 @@ uv run pytest tests/test_memory_regression.py -s -v
 
 The `slow` marker identifies tests that run real Docling inference (model loading, actual document conversion). These tests can take 10–30 seconds per extraction call and are excluded from fast CI runs.
 
-## Test Structure
+## Backend: Test Structure
 
-```
+```text
 tests/
   conftest.py                     # session-scoped real_converter, real_pdf_path
   test_config.py                  # unit tests for config.py
@@ -67,6 +67,7 @@ tests/
       test_router.py              # HTTP router unit tests (mocked service)
       test_schemas.py             # Pydantic schema validation tests
       test_error_map.py           # Domain error -> HTTP status mapping
+      test_cors.py                # CORS header tests
       test_integration.py         # End-to-end HTTP tests with real Docling (slow)
   stubs/
     adapters.py                   # Structural stubs: StubExtractor, StubFilter,
@@ -84,9 +85,67 @@ tests/
     generate_adversarial.py       # Script to regenerate adversarial fixtures
 ```
 
+## Frontend: Test Framework and Setup
+
+| Tool | Version | Role |
+| ---- | ------- | ---- |
+| vitest | ^4.1.7 | Test runner |
+| @vue/test-utils | ^2.4.10 | Vue component mounting and interaction |
+| jsdom | ^29.1.1 | DOM environment for tests |
+| @vitest/ui | ^4.1.7 | Optional browser-based test UI |
+
+The frontend test configuration lives at `frontend/vitest.config.ts`. It uses `jsdom` as the test environment, enables globals (so `describe`, `it`, `expect` are available without imports), and registers the `@vitejs/plugin-vue` plugin so Vue SFCs are compiled correctly during tests. Fetch is mocked using `vi.fn()` from Vitest — no real HTTP calls are made.
+
+## Frontend: Running Tests
+
+```bash
+# From the project root
+cd frontend && npm run test:unit
+
+# Or using the Vitest browser UI
+cd frontend && npm run test:ui
+```
+
+`npm run test:unit` runs `vitest` in watch mode by default. For a single-pass CI run use:
+
+```bash
+cd frontend && npx vitest run
+```
+
+## Frontend: Test Structure
+
+Test files use the `*.spec.ts` naming convention and are colocated with the source files they cover. The upload component tests follow the `__tests__/` subdirectory convention.
+
+```text
+frontend/src/
+  App.spec.ts                              # Root App component integration
+  api/
+    errors.spec.ts                         # API error classification helpers
+    ingest.spec.ts                         # ingest() fetch wrapper
+  types/
+    api.spec.ts                            # API type guard / schema tests
+  lib/
+    validators.spec.ts                     # File validation logic
+    formatters.spec.ts                     # Date / size formatting helpers
+  composables/
+    useUpload.spec.ts                      # useUpload composable (fetch mocked)
+  components/
+    result/
+      ChunkCard.spec.ts                    # ChunkCard component
+      MarkdownRenderer.spec.ts             # MarkdownRenderer component
+      MetadataCard.spec.ts                 # MetadataCard component
+      ResultView.spec.ts                   # ResultView component
+    upload/
+      __tests__/
+        DropZone.spec.ts                   # DropZone component
+        ErrorBanner.spec.ts                # ErrorBanner component
+        ProcessingCard.spec.ts             # ProcessingCard component
+        SkeletonChunk.spec.ts              # SkeletonChunk component
+```
+
 ## Writing New Tests
 
-### File naming
+### Backend file naming
 
 Test files follow the `test_*.py` convention. Directories mirror the `src/selection_maid/` package layout:
 
@@ -94,7 +153,11 @@ Test files follow the `test_*.py` convention. Directories mirror the `src/select
 - Adapter tests live in `tests/adapters/<adapter_name>/`
 - Top-level service and config tests live in `tests/`
 
-### Stubs vs mocks
+### Frontend file naming
+
+Frontend test files follow the `*.spec.ts` convention and should be placed next to the file under test. Component tests may use a `__tests__/` subdirectory within the component folder.
+
+### Backend: stubs vs mocks
 
 `tests/stubs/adapters.py` provides lightweight structural stubs — `StubExtractor`, `StubFilter`, `StubChunker`, `StubEnricher` — that satisfy the port protocols via duck typing. Use these in unit tests for `ExtractionService` so no real Docling or langdetect dependency is triggered.
 
@@ -152,7 +215,7 @@ def test_memory_leak_audit(real_converter: Any, real_pdf_path: Path | None) -> N
     ...
 ```
 
-## Fixtures
+## Backend: Fixtures
 
 ### Session-scoped fixtures (`tests/conftest.py`)
 
@@ -178,22 +241,29 @@ Adversarial fixtures in `tests/fixtures/adversarial/` are generated by `tests/fi
 
 ## Coverage
 
-No minimum coverage threshold is configured in `pyproject.toml`. Run with coverage manually:
+No minimum coverage threshold is configured. Run with coverage manually:
 
 ```bash
+# Backend
 uv run pytest --cov=src --cov-report=term-missing
+
+# Frontend (coverage via Vitest's built-in c8/v8 provider)
+cd frontend && npx vitest run --coverage
 ```
 
 `tests/` is excluded from strict mypy type checking (`exclude = ["tests/"]` in `pyproject.toml`).
 
 ## CI Integration
 
-No CI workflow is currently configured in this repository. To run the test suite locally in a manner consistent with a future CI setup:
+No CI workflow is currently configured in this repository. To run the full test suite locally in a manner consistent with a future CI setup:
 
 ```bash
-# Fast pass — unit tests only (no model loading)
+# Backend — fast pass (unit tests only, no model loading)
 uv run pytest -m "not slow"
 
-# Full pass — all tests including integration
+# Backend — full pass (all tests including integration)
 uv run pytest
+
+# Frontend — single-pass run
+cd frontend && npx vitest run
 ```

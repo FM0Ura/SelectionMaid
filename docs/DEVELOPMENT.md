@@ -40,9 +40,21 @@ uv run uvicorn selection_maid.adapters.http.app:app --reload
 
 The `--reload` flag watches `src/` for changes. On startup, the lifespan context manager loads the Docling `DocumentConverter` and wires all adapters; this takes several seconds on first run due to AI model initialisation.
 
+**Optional — Frontend SPA:** Install and start the Vite dev server (port 5173) alongside the backend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The Vite dev server proxies `/api/*` requests to `http://localhost:8000`, so the backend must also be running.
+
 ---
 
 ## Build Commands
+
+### Backend
 
 | Command | Description |
 |---|---|
@@ -54,9 +66,24 @@ The `--reload` flag watches `src/` for changes. On startup, the lifespan context
 | `uv run ruff format src/ tests/` | Auto-format source and test files |
 | `uv run mypy src/` | Run static type checking (strict mode) |
 
+### Frontend
+
+All frontend commands are run from the `frontend/` directory.
+
+| Command | Description |
+|---|---|
+| `npm install` | Install frontend dependencies |
+| `npm run dev` | Start the Vite dev server on port 5173 (with API proxy) |
+| `npm run build` | Type-check with vue-tsc then produce a production build in `frontend/dist/` |
+| `npm run preview` | Preview the production build locally |
+| `npm run test:unit` | Run unit tests with Vitest (jsdom environment) |
+| `npm run test:ui` | Run Vitest with the browser-based UI |
+
 ---
 
 ## Code Style
+
+### Backend (ruff + mypy)
 
 **Linter and formatter:** [ruff](https://docs.astral.sh/ruff/) — replaces black, isort, and flake8 in a single tool. Configuration lives in `pyproject.toml` under `[tool.ruff]` and `[tool.ruff.lint]`.
 
@@ -84,21 +111,34 @@ uv run mypy src/
 
 **Editor config:** No `.editorconfig` is present. Rely on ruff for all formatting.
 
+### Frontend (vue-tsc)
+
+**Type checker:** `vue-tsc` is the TypeScript compiler for Vue SFCs. The `build` script runs a full type-check as part of the build (`vue-tsc -b && vite build`). To check types without building:
+
+```bash
+cd frontend
+npx vue-tsc --noEmit
+```
+
+There is no separate ESLint configuration file present in `frontend/`. TypeScript strict mode (configured in `tsconfig.app.json`) is the primary correctness gate; `vue-tsc` catches type errors in both `.ts` files and `<script setup>` blocks.
+
 ---
 
 ## Architecture Conventions
 
+### Backend (Hexagonal Architecture)
+
 SelectionMaid uses hexagonal architecture (Ports & Adapters). The following rules are not negotiable:
 
-### Domain isolation
+#### Domain isolation
 
 The `src/selection_maid/domain/` package (`models.py`, `ports.py`) must have **zero imports** from infrastructure, adapters, or any third-party library. Only stdlib and other domain modules are allowed.
 
-### Structural typing — no inheritance
+#### Structural typing — no inheritance
 
 Port adapters satisfy their Protocol via **structural typing** — duck typing, not subclassing. An adapter that implements the correct method signature automatically satisfies the Protocol. Do not inherit from `ExtractorPort`, `FilterPort`, `ChunkerPort`, or `MetadataEnricherPort`.
 
-### Factory functions
+#### Factory functions
 
 Every adapter must expose a factory function named `build_<adapter>(config) -> <AdapterClass>`. Existing factories:
 
@@ -110,7 +150,7 @@ Every adapter must expose a factory function named `build_<adapter>(config) -> <
 | `build_metadata_enricher(config)` | `adapters/enricher/default.py` |
 | `build_router(service, config)` | `adapters/http/router.py` |
 
-### Docling import isolation
+#### Docling import isolation
 
 `docling.*` imports may only appear inside `adapters/extractor/docling.py`. All other modules that reference Docling types must use a `TYPE_CHECKING` guard:
 
@@ -124,22 +164,46 @@ if TYPE_CHECKING:
 
 This prevents torch model loading on module import.
 
-### Configuration injection
+#### Configuration injection
 
 Configuration values are injected into adapters via their constructors. Adapter classes must never call `get_config()` internally. `get_config()` is called once in the lifespan context manager in `app.py` and the resulting `GlobalConfig` sections are passed to each factory.
 
-### Value objects
+#### Value objects
 
 All domain value objects (`RawInput`, `RawDocument`, `DocumentChunk`, `DocumentMetadata`, `ExtractionResult`) are frozen dataclasses. Do not add mutable fields.
 
-### Exception wrapping
+#### Exception wrapping
 
 - Adapters raise `SelectionMaidError` subclasses (`ExtractionError`, `FilterError`, `ChunkingError`, `EnrichmentError`, `UnsupportedFormatError`, `ExtractionTimeoutError`).
 - `ExtractionService.process()` wraps any non-domain exception raised by an adapter in the appropriate domain error subclass (decision D-16). Callers of `process()` only ever see `SelectionMaidError` subclasses.
 
+### Frontend (Vue 3 SPA)
+
+#### Component authoring
+
+All components use the Vue 3 Composition API with `<script setup>` SFCs. The Options API and the `defineComponent()` wrapper form are not used.
+
+#### State management
+
+The application uses a single `useUpload` composable (`src/composables/useUpload.ts`) as the central state owner. **No Pinia** — the composable's `readonly` refs are passed as props or provided via Vue's `provide/inject` where needed.
+
+#### HTTP requests
+
+All API calls go through the `src/api/` module using the **native `fetch` API**. No Axios or any other HTTP client library is used. The Vite dev server proxies `/api/*` to the backend at `http://localhost:8000`.
+
+#### Animations
+
+[motion-v](https://motion.dev/vue) is used exclusively for **transform and opacity transitions** (enter/leave, layout shifts). Do not use it for color, size, or other CSS property animations — use Tailwind CSS transitions for those.
+
+#### shadcn-vue and UI primitives
+
+Base UI components (`Button`, `Card`, `Alert`, `Skeleton`) are sourced from [shadcn-vue](https://www.shadcn-vue.com/) and live in `src/components/ui/`. Do not modify these files directly; re-generate them with the shadcn-vue CLI if an upstream update is needed.
+
 ---
 
 ## Source Layout
+
+### Backend source tree
 
 ```
 src/selection_maid/
@@ -153,6 +217,23 @@ src/selection_maid/
   config.py        # GlobalConfig, get_config() — reads config.toml
   service.py       # ExtractionService — pipeline orchestration
   errors.py        # SelectionMaidError hierarchy
+```
+
+### Frontend source tree
+
+```
+frontend/src/
+  api/             # ingest.ts — fetch wrapper for POST /api/ingest; errors.ts — ApiResponseError
+  composables/     # useUpload.ts — upload state machine (idle → uploading → processing → success/error)
+  components/
+    upload/        # DropZone, DropOverlay, ProcessingCard, ErrorBanner, SkeletonChunk
+    result/        # ResultView, ChunkCard, MetadataCard, MarkdownRenderer
+    ui/            # shadcn-vue primitives: Button, Card, Alert, Skeleton
+  types/           # api.ts — TypeScript interfaces for ExtractionResponse, Chunk, DocumentMetadata, UploadState
+  lib/             # utils.ts — shadcn cn() helper; formatters.ts — date/size formatting; validators.ts — file validation
+  assets/          # Static assets (CSS, images)
+  main.ts          # Vue app entry point
+  App.vue          # Root component
 ```
 
 ---
@@ -183,7 +264,7 @@ No branch naming convention is documented. A conventional approach is:
 - `fix/<short-description>` for bug fixes
 - `chore/<short-description>` for maintenance tasks
 
-The default branch is `main`.
+The default branch is `master`.
 
 ---
 
@@ -194,5 +275,6 @@ No pull request template is present. Follow these steps when submitting a PR:
 - Ensure `uv run ruff check src/ tests/` passes with no errors.
 - Ensure `uv run mypy src/` passes with no errors.
 - Ensure `uv run pytest` passes in full.
+- For frontend changes, ensure `npm run build` (which includes vue-tsc) passes without errors and `npm run test:unit` passes.
 - Keep PRs focused on a single concern. Reference relevant decision records (D-XX) in the PR description when changing architecture decisions.
 - New adapters must be covered by unit tests that mock the port boundary. Integration tests that invoke real Docling are marked `@pytest.mark.slow`.
